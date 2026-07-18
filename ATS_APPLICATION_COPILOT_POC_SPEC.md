@@ -3,7 +3,7 @@
 ## POC Product and Implementation Specification
 
 **Status:** Locked for implementation  
-**Version:** 1.1
+**Version:** 1.2
 **Date:** 2026-07-18  
 **Primary client:** Chrome extension  
 **Implementation strategy:** Three phases, each independently demonstrable
@@ -58,6 +58,7 @@ These decisions must not be changed by an implementation agent unless the produc
 21. An application has a durable `applicationId` and `jobFingerprint`. A Chrome `tabId` is only a temporary browser binding.
 22. AI output never manipulates the page directly. Browser filling executes only a validated, user-approved fill plan through an ATS adapter.
 23. Job-page content is untrusted input. Sanitize and delimit it before AI use and prevent instructions embedded in a job page from changing system behavior.
+24. After PDF/DOCX parsing, profile verification must show the rendered uploaded resume as paginated A4 source pages alongside extracted facts. Users must be able to compare extraction with the source before facts become verified; incomplete review receives a clear nudge.
 
 ---
 
@@ -119,6 +120,7 @@ It contains:
    - Paste Markdown/plain text.
    - Display extracted/entered facts.
    - Let the user edit and verify facts.
+   - After backend parsing is available, display the rendered uploaded resume beside extracted facts so the user can compare source content and extraction.
    - Show profile readiness and last-updated state.
 
 2. **Documents**
@@ -526,6 +528,8 @@ Portal detection suggests the status; the user confirms it.
 ```
 
 Unverified facts cannot support generated resume claims.
+
+In Phase 3, the fact-review screen also displays the uploaded resume as paginated A4 source pages. Selecting a fact should identify its source page and highlighted region when provenance is available. The user receives a visible reminder when extracted facts have not yet been compared with the rendered source.
 
 ### 5.17 A4 resume-review mockup
 
@@ -1595,6 +1599,7 @@ Do not add Celery/Redis for the first working backend. Keep long-running operati
 - Convert Docling output into the neutral `ParsedDocument` contract.
 - Normalize into candidate facts with source evidence.
 - Return uncertain facts for review.
+- Produce a safe paginated A4 source rendering for profile verification, preserving page correspondence with fact provenance.
 
 Do not use exported Markdown as the canonical parsed representation.
 
@@ -1809,6 +1814,7 @@ Phase 3 is complete when the following complete journey is manually demonstrated
 2. Upload one PDF or DOCX resume.
 3. Docling parses it.
 4. The user reviews and verifies candidate facts.
+   - The user compares extracted facts against the rendered A4 source resume and resolves the review nudge.
 5. Open a supported job page.
 6. The extension extracts the job and application fields.
 7. The backend returns an explainable match score.

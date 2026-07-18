@@ -313,4 +313,8 @@ Phase 1 does not include:
 - Authentication.
 - Automated test frameworks.
 
+### Deferred source-document verification requirement
+
+When backend parsing begins in Phase 3, Profile verification must add a paginated A4 rendering of the uploaded source resume beside the extracted fact review. Fact provenance should navigate to and highlight the corresponding source region where available. The Dashboard must nudge the user until extracted facts have been compared with the rendered source. Phase 1 retains the upload/paste presentation and mock fact review but does not fabricate a parsed source rendering.
+
 Phase 1 is complete only after the production build succeeds and every manual acceptance-gate item is recorded as passed or documented with a Phase 1-relevant limitation.

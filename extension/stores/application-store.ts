@@ -45,6 +45,11 @@ const initialState: ApplicationState = {
 
 export function createApplicationStore(repository: SessionRepository) {
   return createStore<ApplicationStore>((set, get) => {
+    repository.subscribe(() => {
+      void repository.load().then((loaded) => {
+        set({ ...loaded.session, hydrated: true, recoveryNotice: loaded.status === 'recovered' ? loaded.reason : null });
+      });
+    });
     const checkpoint = (): PersistedSession => sessionSchema.parse({
       schemaVersion: 1, workflowStatus: get().workflowStatus, profile: get().profile,
       job: get().job, matchResult: get().matchResult, documents: get().documents,

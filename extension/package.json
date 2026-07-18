@@ -14,6 +14,7 @@
     "compile": "tsc --noEmit",
     "validate:fixtures": "tsx scripts/validate-fixtures.ts",
     "validate:workflow": "tsx scripts/validate-workflow.ts",
+    "validate:sync": "tsx scripts/validate-sync.ts",
     "inspect:manifest": "tsx scripts/inspect-manifest.ts",
     "postinstall": "wxt prepare"
   },

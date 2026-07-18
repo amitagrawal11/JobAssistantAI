@@ -57,7 +57,7 @@ button, input, textarea, select { font: inherit; }
 .sidepanel-header p { margin: 0; color: var(--muted); font-size: .8rem; }
 .ready { color: var(--success); font-size: .78rem; font-weight: 700; float: right; }
 .step-indicator { list-style: none; margin: 0; padding: .7rem .6rem; display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: .25rem; background: white; border-bottom: 1px solid var(--border); }
-.step-indicator li { display: grid; justify-items: center; gap: .2rem; color: var(--muted); font-size: .66rem; }
+.step-indicator li { color: var(--muted); font-size: .66rem; }.step-indicator button { width: 100%; display: grid; justify-items: center; gap: .2rem; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font-size: inherit; }.step-indicator button:disabled { cursor: not-allowed; opacity: .65; }
 .step-indicator li span { display: grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: #eef2f7; font-weight: 750; }
 .step-indicator li.active { color: var(--primary); font-weight: 750; }
 .step-indicator li.active span { background: var(--primary); color: white; }
@@ -133,3 +133,4 @@ button, input, textarea, select { font: inherit; }
 @media (max-width: 900px) { .profile-layout,.settings-grid { grid-template-columns: 1fr; }.application-table { overflow-x: auto; }.application-row { min-width: 50rem; }.settings-card:last-child { grid-column: auto; } }
 .profile-gate { grid-template-rows: auto minmax(0,1fr); }.profile-required { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; padding: 2rem; text-align: center; }.profile-required h1,.profile-required p { margin: 0; }.profile-required p { max-width: 18rem; color: var(--muted); line-height: 1.5; }.profile-icon { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; color: var(--primary); background: #e8eeff; border-radius: 50%; }
 .recovery-notice { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .75rem; padding: .65rem .75rem; color: #725000; background: #fff5d9; border: 1px solid #f2d47f; border-radius: var(--radius-sm); font-size: .75rem; }.recovery-notice button { border: 0; background: transparent; color: inherit; font-weight: 800; cursor: pointer; }
+.read-only .field-row { pointer-events: none; }.textarea:read-only { background: #f3f6fa; color: var(--muted); }

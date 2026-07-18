@@ -9,4 +9,5 @@ export interface SessionRepository {
   load(): Promise<SessionLoadResult>;
   save(checkpoint: PersistedSession): Promise<void>;
   reset(): Promise<PersistedSession>;
+  subscribe(listener: () => void): () => void;
 }

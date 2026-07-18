@@ -29,6 +29,7 @@ pnpm dev
 cd extension
 pnpm validate:fixtures
 pnpm validate:workflow
+pnpm validate:sync
 pnpm compile
 pnpm build
 pnpm inspect:manifest

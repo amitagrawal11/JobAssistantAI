@@ -12,6 +12,7 @@ Use `extension/.output/chrome-mv3`. Rebuild and reload the extension before star
 | --- | --- | --- |
 | Fictional fixture graph is valid and every referenced fact is verified | Pass | `pnpm validate:fixtures` → `Validated Phase 1 fixtures` |
 | Workflow happy path and illegal-transition protection are valid | Pass | `pnpm validate:workflow` → `Validated Phase 1 workflow transitions` |
+| Durable changes synchronize between open extension surfaces | Pass | `pnpm validate:sync` → `Validated cross-surface repository synchronization` |
 | TypeScript compiles without errors | Pass | `pnpm compile`, 2026-07-19 |
 | Production extension builds | Pass | WXT 0.20.27 Chrome MV3 build, 2026-07-19 |
 | Manifest contains only Phase 1 permissions | Pass | `Validated manifest permissions: sidePanel, storage` |
@@ -40,6 +41,8 @@ Mark each item Pass or Fail and add notes for any failure.
 | Profile supports upload/paste presentation and editable fact verification | Pending | |
 | Applications filters change visible fictional records | Pending | |
 | Settings reusable answers persist and Reset mock data requires confirmation | Pending | |
+| Reset mock data updates an already-open side panel without closing it | Pending | |
+| Completed/current steps are clickable; incomplete future steps remain disabled | Pending | |
 | Keyboard focus is visible across side-panel and Dashboard controls | Pending | |
 | Dashboard remains understandable at a 1024px viewport | Pending | |
 | Refreshing side panel and Dashboard restores a valid checkpoint | Pending | |

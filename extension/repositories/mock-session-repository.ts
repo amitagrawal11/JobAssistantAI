@@ -7,6 +7,7 @@ const cloneSeed = () => structuredClone(mockSession);
 
 export class MemorySessionRepository implements SessionRepository {
   protected checkpoint: PersistedSession | null = null;
+  private listeners = new Set<() => void>();
 
   async load(): Promise<SessionLoadResult> {
     if (!this.checkpoint) return { status: 'seeded', session: cloneSeed() };
@@ -15,47 +16,54 @@ export class MemorySessionRepository implements SessionRepository {
 
   async save(checkpoint: PersistedSession): Promise<void> {
     this.checkpoint = sessionSchema.parse(structuredClone(checkpoint));
+    this.listeners.forEach((listener) => listener());
   }
 
   async reset(): Promise<PersistedSession> {
     this.checkpoint = cloneSeed();
+    this.listeners.forEach((listener) => listener());
     return structuredClone(this.checkpoint);
+  }
+
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 }
 
 export class MockSessionRepository implements SessionRepository {
   async load(): Promise<SessionLoadResult> {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const record = await browser.storage.local.get(STORAGE_KEY);
+    const stored = record[STORAGE_KEY];
     if (!stored) return { status: 'seeded', session: cloneSeed() };
 
-    try {
-      const parsed = sessionSchema.safeParse(JSON.parse(stored));
-      if (!parsed.success) {
-        localStorage.removeItem(STORAGE_KEY);
-        return {
-          status: 'recovered',
-          session: cloneSeed(),
-          reason: 'Saved demo data was incompatible and has been safely reset.',
-        };
-      }
-      return { status: 'restored', session: parsed.data };
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
+    const parsed = sessionSchema.safeParse(stored);
+    if (!parsed.success) {
+      await browser.storage.local.remove(STORAGE_KEY);
       return {
         status: 'recovered',
         session: cloneSeed(),
-        reason: 'Saved demo data could not be read and has been safely reset.',
+        reason: 'Saved demo data was incompatible and has been safely reset.',
       };
     }
+    return { status: 'restored', session: parsed.data };
   }
 
   async save(checkpoint: PersistedSession): Promise<void> {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionSchema.parse(checkpoint)));
+    await browser.storage.local.set({ [STORAGE_KEY]: sessionSchema.parse(checkpoint) });
   }
 
   async reset(): Promise<PersistedSession> {
     const session = cloneSeed();
     await this.save(session);
     return session;
+  }
+
+  subscribe(listener: () => void) {
+    const handleChange = (changes: Record<string, Browser.storage.StorageChange>, areaName: string) => {
+      if (areaName === 'local' && changes[STORAGE_KEY]) listener();
+    };
+    browser.storage.onChanged.addListener(handleChange);
+    return () => browser.storage.onChanged.removeListener(handleChange);
   }
 }
