@@ -9,6 +9,7 @@ import { MatchView } from '../../features/job-analysis/match-view';
 import { TailorView } from '../../features/tailoring/tailor-view';
 import { FillView } from '../../features/application-fill/fill-view';
 import { ConfirmView } from '../../features/application-fill/confirm-view';
+import { ProfileRequired } from '../../components/application/profile-required';
 import { openDashboard } from '../../features/shared/open-dashboard';
 import { useApplicationStore } from '../../stores/react';
 import { selectCurrentStep } from '../../stores/selectors';
@@ -26,9 +27,13 @@ export default function App() {
   const fillPlan = useApplicationStore((state) => state.fillPlan);
   const simulateFill = useApplicationStore((state) => state.simulateFill);
   const markReady = useApplicationStore((state) => state.markApplicationReady);
+  const profileReady = useApplicationStore((state) => state.profile.verification.status === 'ready');
+  const recoveryNotice = useApplicationStore((state) => state.recoveryNotice);
+  const dismissRecovery = useApplicationStore((state) => state.dismissRecoveryNotice);
 
   useEffect(() => { void hydrate(); }, [hydrate]);
   if (!hydrated) return <LoadingState />;
+  if (!profileReady) return <main className="sidepanel-shell profile-gate"><header className="sidepanel-header"><strong>Job Copilot</strong></header><ProfileRequired onSetup={() => void openDashboard('profile')} /></main>;
 
   return <main className="sidepanel-shell">
     <header className="sidepanel-header">
@@ -37,6 +42,7 @@ export default function App() {
     </header>
     <StepIndicator current={step} />
     <section className="sidepanel-content">
+      {recoveryNotice && <div className="recovery-notice" role="status"><span>{recoveryNotice}</span><button onClick={dismissRecovery}>Dismiss</button></div>}
       {status === 'failed' ? <ErrorState title="Analysis interrupted" message={error ?? 'The mock operation failed.'} onRetry={() => void retry()} /> : step === 'scan' ? <ScanView /> : step === 'match' ? <MatchView /> : step === 'tailor' ? <TailorView /> : step === 'fill' ? <FillView /> : <ConfirmView />}
     </section>
     <footer className="sidepanel-footer">

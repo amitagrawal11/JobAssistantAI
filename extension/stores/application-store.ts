@@ -91,15 +91,18 @@ export function createApplicationStore(repository: SessionRepository) {
         await get().analyzeMockJob();
       },
       setFactValue: async (factId, value) => {
-        set((state) => ({ profile: { ...state.profile, facts: state.profile.facts.map((fact) => fact.id === factId ? { ...fact, value, verified: false } : fact) } }));
+        set((state) => ({ profile: { ...state.profile, facts: state.profile.facts.map((fact) => fact.id === factId ? { ...fact, value, verified: false } : fact), verification: { ...state.profile.verification, status: 'in_review', verifiedFactIds: state.profile.verification.verifiedFactIds.filter((id) => id !== factId) } } }));
         await persist();
       },
       verifyFact: async (factId) => {
-        set((state) => ({ profile: { ...state.profile, facts: state.profile.facts.map((fact) => fact.id === factId ? { ...fact, verified: true } : fact), verification: { ...state.profile.verification, verifiedFactIds: [...new Set([...state.profile.verification.verifiedFactIds, factId])] } } }));
+        set((state) => {
+          const facts = state.profile.facts.map((fact) => fact.id === factId ? { ...fact, verified: true } : fact);
+          return { profile: { ...state.profile, facts, verification: { status: facts.every((fact) => fact.verified) ? 'ready' : 'in_review', verifiedFactIds: facts.filter((fact) => fact.verified).map((fact) => fact.id) } } };
+        });
         await persist();
       },
       rejectFact: async (factId) => {
-        set((state) => ({ profile: { ...state.profile, facts: state.profile.facts.filter((fact) => fact.id !== factId), verification: { ...state.profile.verification, verifiedFactIds: state.profile.verification.verifiedFactIds.filter((id) => id !== factId) } } }));
+        set((state) => ({ profile: { ...state.profile, facts: state.profile.facts.filter((fact) => fact.id !== factId), verification: { status: 'in_review', verifiedFactIds: state.profile.verification.verifiedFactIds.filter((id) => id !== factId) } } }));
         await persist();
       },
       setReusableAnswer: async (key, value) => {
