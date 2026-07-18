@@ -6,6 +6,7 @@ import { LoadingState } from '../../components/states/loading-state';
 import { ErrorState } from '../../components/states/error-state';
 import { ScanView } from '../../features/job-analysis/scan-view';
 import { MatchView } from '../../features/job-analysis/match-view';
+import { TailorView } from '../../features/tailoring/tailor-view';
 import { openDashboard } from '../../features/shared/open-dashboard';
 import { useApplicationStore } from '../../stores/react';
 import { selectCurrentStep } from '../../stores/selectors';
@@ -31,10 +32,10 @@ export default function App() {
     </header>
     <StepIndicator current={step} />
     <section className="sidepanel-content">
-      {status === 'failed' ? <ErrorState title="Analysis interrupted" message={error ?? 'The mock operation failed.'} onRetry={() => void retry()} /> : step === 'scan' ? <ScanView /> : step === 'match' ? <MatchView /> : <div className="state-panel"><p className="eyebrow">{step}</p><h2>{step[0].toUpperCase() + step.slice(1)} is next</h2><p>This vertical slice follows the approved Match checkpoint.</p></div>}
+      {status === 'failed' ? <ErrorState title="Analysis interrupted" message={error ?? 'The mock operation failed.'} onRetry={() => void retry()} /> : step === 'scan' ? <ScanView /> : step === 'match' ? <MatchView /> : step === 'tailor' ? <TailorView /> : <div className="state-panel"><p className="eyebrow">{step}</p><h2>{step[0].toUpperCase() + step.slice(1)} is next</h2><p>This vertical slice follows the approved Tailor checkpoint.</p></div>}
     </section>
     <footer className="sidepanel-footer">
-      {step === 'scan' ? <><Button variant="secondary" onClick={() => void analyze({ fail: true })}>Simulate error</Button><Button onClick={() => void analyze()}>Analyze job</Button></> : step === 'match' ? <><Button variant="secondary" onClick={() => void transitionTo('job_detected')}>Edit job</Button><Button onClick={() => void transitionTo('tailoring')}>Continue</Button></> : <><Button variant="secondary">Back</Button><Button disabled>Continue</Button></>}
+      {step === 'scan' ? <><Button variant="secondary" onClick={() => void analyze({ fail: true })}>Simulate error</Button><Button onClick={() => void analyze()}>Analyze job</Button></> : step === 'match' ? <><Button variant="secondary" onClick={() => void transitionTo('job_detected')}>Edit job</Button><Button onClick={() => void transitionTo('tailoring')}>Continue</Button></> : step === 'tailor' ? <><Button variant="secondary" onClick={() => void openDashboard('documents')}>Review details</Button><Button onClick={() => { void transitionTo('reviewing').then(() => transitionTo('ready_to_fill')); }}>Approve set</Button></> : <><Button variant="secondary">Back</Button><Button disabled>Continue</Button></>}
     </footer>
   </main>;
 }
