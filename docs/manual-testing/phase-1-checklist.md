@@ -1,7 +1,7 @@
 # Phase 1 Manual Acceptance Checklist
 
 **Build date:** 2026-07-19  
-**Chrome version:** Record during final pass  
+**Chrome version:** Not recorded  
 **Reviewer:** Product owner
 
 Use `extension/.output/chrome-mv3`. Rebuild and reload the extension before starting.
@@ -24,29 +24,29 @@ Mark each item Pass or Fail and add notes for any failure.
 
 | Requirement | Result | Notes |
 | --- | --- | --- |
-| Unpacked production extension loads without manifest errors | Pending | |
-| Toolbar icon opens the side panel | Pending | |
-| Chrome reports that the extension does not need site access | Pending | |
-| Side panel remains usable at its narrowest practical width (approximately 360px) | Pending | |
-| Scan supports job-text editing and displays 15 mock fields | Pending | |
-| Recoverable analysis error preserves text and Retry reaches Match | Pending | |
-| Match shows score, hard gates, matched, partial, missing, unknown, and evidence | Pending | |
-| Tailor supports change selection and opens document review in Dashboard | Pending | |
-| Dashboard resume preview preserves the 210:297 A4 boundary without overflow | Pending | |
-| Resume changes show before, after, reason, classification, and verified evidence | Pending | |
-| Fill groups entries by confidence and keeps sensitive/unknown answers user-controlled | Pending | |
-| Simulated field failure does not stop other approved entries | Pending | |
-| Confirm states that the user submits on the portal and exposes no Submit automation | Pending | |
-| Dashboard Profile, Documents, Applications, and Settings are reachable | Pending | |
-| Profile supports upload/paste presentation and editable fact verification | Pending | |
-| Applications filters change visible fictional records | Pending | |
-| Settings reusable answers persist and Reset mock data requires confirmation | Pending | |
-| Reset mock data updates an already-open side panel without closing it | Pending | |
-| Completed/current steps are clickable; incomplete future steps remain disabled | Pending | |
-| Keyboard focus is visible across side-panel and Dashboard controls | Pending | |
-| Dashboard remains understandable at a 1024px viewport | Pending | |
-| Refreshing side panel and Dashboard restores a valid checkpoint | Pending | |
-| Browser Network panel shows no application network requests | Pending | Ignore Chrome internal requests; the extension makes none. |
+| Unpacked production extension loads without manifest errors | Pass | |
+| Toolbar icon opens the side panel | Pass | |
+| Chrome reports that the extension does not need site access | Pass | |
+| Side panel remains usable at its narrowest practical width (approximately 360px) | Pass | |
+| Scan supports job-text editing and displays 15 mock fields | Pass | |
+| Recoverable analysis error preserves text and Retry reaches Match | Pass | |
+| Match shows score, hard gates, matched, partial, missing, unknown, and evidence | Pass | |
+| Tailor supports change selection and opens document review in Dashboard | Pass | |
+| Dashboard resume preview preserves the 210:297 A4 boundary without overflow | Pass | |
+| Resume changes show before, after, reason, classification, and verified evidence | Pass | |
+| Fill groups entries by confidence and keeps sensitive/unknown answers user-controlled | Pass | |
+| Simulated field failure does not stop other approved entries | Pass | |
+| Confirm states that the user submits on the portal and exposes no Submit automation | Pass | |
+| Dashboard Profile, Documents, Applications, and Settings are reachable | Pass | |
+| Profile supports upload/paste presentation and editable fact verification | Pass | |
+| Applications filters change visible fictional records | Pass | |
+| Settings reusable answers persist and Reset mock data requires confirmation | Pass | |
+| Reset mock data updates an already-open side panel without closing it | Pass | |
+| Completed/current steps are clickable; incomplete future steps remain disabled | Pass | |
+| Keyboard focus is visible across side-panel and Dashboard controls | Pass | |
+| Dashboard remains understandable at a 1024px viewport | Pass | |
+| Refreshing side panel and Dashboard restores a valid checkpoint | Pass | |
+| Browser Network panel shows no application network requests | Pass | Ignore Chrome internal requests; the extension makes none. |
 
 ## Recovery checks
 
@@ -69,5 +69,5 @@ Mark each item Pass or Fail and add notes for any failure.
 
 ## Sign-off
 
-**Final result:** Pending product-owner complete click-through  
-**Notes:** The initial Scan/Match shell, Dashboard opening behavior, narrow side panel, and no-site-access state were visually reviewed on 2026-07-19. The complete journey requires a reload after the latest build.
+**Final result:** Pass  
+**Notes:** The product owner completed the full journey, reviewed all Dashboard surfaces, and verified immediate Reset synchronization plus backward-only step navigation on 2026-07-19.
