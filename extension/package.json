@@ -12,6 +12,7 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "validate:fixtures": "tsx scripts/validate-fixtures.ts",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
