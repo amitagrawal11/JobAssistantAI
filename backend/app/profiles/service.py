@@ -144,6 +144,7 @@ class ProfileService:
             email=profile.email,
             readiness=profile.readiness.value,
             source_comparison_resolved=profile.source_comparison_resolved,
+            ai_preferences=profile.ai_preferences,
             facts=[
                 CandidateFact(
                     id=str(fact.id),

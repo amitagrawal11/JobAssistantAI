@@ -389,19 +389,19 @@ git commit -m "feat: add A4 source fact verification"
 - Create: `extension/api/ai.ts`
 - Modify: `extension/features/dashboard/settings-page.tsx`
 
-- [ ] **Step 1: Define provider and named-agent contracts**
+- [x] **Step 1: Define provider and named-agent contracts**
 
 Roles are `job_analyst`, `candidate_evidence`, `tailoring`, and `critic`. `AgentRequest` contains delimited minimum inputs, provider/model, role, prompt version, and schema version. `AgentResult[T]` contains validated output plus provenance, never chain-of-thought.
 
-- [ ] **Step 2: Implement Ollama structured outputs**
+- [x] **Step 2: Implement Ollama structured outputs**
 
 List installed models through `GET /api/tags`. Call chat with the Pydantic JSON schema as `format`, non-streaming output, and low temperature. Validate response content with the same Pydantic model. Report unavailable server/model without fallback.
 
-- [ ] **Step 3: Implement OpenAI structured outputs**
+- [x] **Step 3: Implement OpenAI structured outputs**
 
 Use the official OpenAI Python SDK and Responses API structured JSON schema. Models come only from `OPENAI_MODELS`; credentials remain backend-only. Record response ID and safe usage metadata, not prompts or document content.
 
-- [ ] **Step 4: Add provider APIs and saved preference**
+- [x] **Step 4: Add provider APIs and saved preference**
 
 ```text
 GET   /ai/providers
@@ -411,15 +411,15 @@ PATCH /profiles/{profile_id}/ai-preferences
 
 Responses expose only availability, safe model IDs, selected model, and status.
 
-- [ ] **Step 5: Implement Settings UI**
+- [x] **Step 5: Implement Settings UI**
 
 Add provider/model selectors, status, Test connection, privacy-routing notice, and Save. A provider change resets the model selection. Existing artifacts display immutable provider/model provenance.
 
-- [ ] **Step 6: Validate configured providers**
+- [x] **Step 6: Validate configured providers**
 
 Run Ollama checks against the installed local service. Run OpenAI checks only when `OPENAI_API_KEY` and allowlisted models are configured; otherwise verify that the provider is reported unavailable without exposing configuration details.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend extension

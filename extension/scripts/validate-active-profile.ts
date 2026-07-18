@@ -7,6 +7,7 @@ const baseProfile: BackendProfile = {
   email: 'amit@example.test',
   readiness: 'needs_review',
   source_comparison_resolved: false,
+  ai_preferences: {},
   facts: [],
   created_at: '2026-07-19T00:00:00Z',
   updated_at: '2026-07-19T00:00:00Z',

@@ -63,6 +63,7 @@ class Profile(IdentifierMixin, TimestampMixin, Base):
         default=ProfileReadiness.uploaded,
     )
     source_comparison_resolved: Mapped[bool] = mapped_column(nullable=False, default=False)
+    ai_preferences: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False, default=dict)
 
 
 class Operation(IdentifierMixin, TimestampMixin, Base):

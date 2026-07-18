@@ -49,6 +49,7 @@ class ProfileResponse(ApiModel):
     email: str | None
     readiness: ProfileReadinessValue
     source_comparison_resolved: bool
+    ai_preferences: dict[str, str]
     facts: list[CandidateFact]
     created_at: datetime
     updated_at: datetime

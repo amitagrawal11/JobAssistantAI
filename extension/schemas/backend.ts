@@ -33,6 +33,7 @@ export const backendProfileSchema = z.object({
   email: z.string().nullable(),
   readiness: z.enum(['uploaded', 'needs_review', 'ready', 'parse_failed']),
   source_comparison_resolved: z.boolean(),
+  ai_preferences: z.record(z.string(), z.string()),
   facts: z.array(backendCandidateFactSchema),
   created_at: z.iso.datetime({ offset: true }),
   updated_at: z.iso.datetime({ offset: true }),
@@ -99,6 +100,20 @@ export const sourcePreviewSchema = z.object({
   ),
 });
 
+export const providerInfoSchema = z.object({
+  id: z.enum(['ollama', 'openai']),
+  label: z.string(),
+  available: z.boolean(),
+  models: z.array(z.string()),
+  selected_model: z.string().nullable(),
+  status: z.enum(['available', 'not_configured', 'unavailable', 'no_models']),
+});
+export const providerListSchema = z.object({ providers: z.array(providerInfoSchema) });
+export const providerTestSchema = z.object({
+  provider: z.enum(['ollama', 'openai']), model: z.string(), ok: z.boolean(), message: z.string(),
+});
+export const aiPreferenceSchema = z.object({ provider: z.enum(['ollama', 'openai']), model: z.string() });
+
 export type BackendProfile = z.infer<typeof backendProfileSchema>;
 export type ProfileCreate = z.infer<typeof profileCreateSchema>;
 export type ProfileUpdate = z.infer<typeof profileUpdateSchema>;
@@ -108,3 +123,5 @@ export type FactVerificationRequest = z.infer<
 export type DocumentUpload = z.infer<typeof documentUploadSchema>;
 export type DocumentParse = z.infer<typeof documentParseSchema>;
 export type SourcePreview = z.infer<typeof sourcePreviewSchema>;
+export type ProviderInfo = z.infer<typeof providerInfoSchema>;
+export type AiPreference = z.infer<typeof aiPreferenceSchema>;
