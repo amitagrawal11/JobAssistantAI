@@ -16,6 +16,7 @@ from app.db.entities import (
     SourceDocument,
 )
 from app.db.session import get_session_factory
+from smoke_cleanup import register_profile
 
 
 BASE_URL = os.environ.get("PROFILE_API_BASE_URL", "http://127.0.0.1:8000")
@@ -98,6 +99,7 @@ def main() -> None:
     assert status == 201
     assert profile["readiness"] == "uploaded"
     profile_id = profile["id"]
+    register_profile(profile_id)
 
     status, profile = request("GET", f"/profiles/{profile_id}")
     assert status == 200
@@ -115,6 +117,7 @@ def main() -> None:
         {"display_name": "Earlier Profile"},
     )
     assert status == 201
+    register_profile(other_profile["id"])
     status, profile = request(
         "PATCH", f"/profiles/{profile_id}", {"display_name": "Jordan Latest Lee"}
     )

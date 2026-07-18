@@ -16,6 +16,7 @@
     "validate:workflow": "tsx scripts/validate-workflow.ts",
     "validate:sync": "tsx scripts/validate-sync.ts",
     "validate:active-profile": "tsx scripts/validate-active-profile.ts",
+    "validate:no-runtime-mocks": "tsx scripts/validate-no-runtime-mocks.ts",
     "inspect:manifest": "tsx scripts/inspect-manifest.ts",
     "postinstall": "wxt prepare"
   },

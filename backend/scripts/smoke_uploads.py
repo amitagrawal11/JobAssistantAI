@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.db.entities import SourceDocument
 from app.db.session import get_session_factory
 from app.storage.filesystem import FilesystemStorage
+from smoke_cleanup import register_profile
 
 
 BASE_URL = os.environ.get("UPLOAD_API_BASE_URL", "http://127.0.0.1:8000")
@@ -30,7 +31,7 @@ def create_profile(client: httpx.Client) -> str:
         json={"display_name": "Jordan Lee", "email": "jordan@example.test"},
     )
     response.raise_for_status()
-    return response.json()["id"]
+    return register_profile(response.json()["id"])
 
 
 def upload(

@@ -11,6 +11,7 @@ import httpx
 from app.models.job import JobRequirementOutput
 from app.models.match import EvidenceClassification, RequirementEvidence
 from app.scoring.aggregator import aggregate_match, normalize_agent_evidence
+from smoke_cleanup import register_job, register_profile
 
 
 BASE_URL = os.environ.get("SCORING_API_BASE_URL", "http://127.0.0.1:8000")
@@ -86,6 +87,7 @@ def main() -> None:
             profile_response = client.post("/profiles", json={"display_name": "Scoring Smoke"})
             profile_response.raise_for_status()
             profile_id = profile_response.json()["id"]
+            register_profile(profile_id)
             resume_path = ROOT / "shared" / "examples" / "resume" / "jordan-lee-resume.pdf"
             with resume_path.open("rb") as resume:
                 upload = client.post(
@@ -119,6 +121,7 @@ def main() -> None:
             analysis = client.post("/jobs/analyze", json={"profile_id": profile_id, **job_input})
             analysis.raise_for_status()
             analyzed = analysis.json()
+            register_job(analyzed["job_id"])
             requirement_text = " ".join(item["normalized_text"].lower() for item in analyzed["requirements"])
             assert "api key" not in requirement_text and "switch" not in requirement_text
             scored = client.post("/matches/score", json={"profile_id": profile_id, "job_id": analyzed["job_id"]})

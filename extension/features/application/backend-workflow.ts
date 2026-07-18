@@ -21,5 +21,6 @@ export function backendMaxUnlocked({
   if (!profileReady) return 0;
   if (!hasJob) return 1;
   if (!hasMatch) return 2;
-  return Math.max(3, legacyIndex);
+  void legacyIndex;
+  return 3;
 }

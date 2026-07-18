@@ -23,6 +23,7 @@ export function SidebarProfileSelector({ activeProfileId }: { activeProfileId: s
   return <div className="sidebar-profile-list" role="radiogroup" aria-label="Candidate profile">
     {profiles.data.map((profile) => {
       const selected = profile.id === activeProfileId;
+      const displayName = profile.facts.find((fact) => fact.key === 'full_name')?.value ?? profile.display_name;
       return <button
         key={profile.id}
         type="button"
@@ -33,7 +34,7 @@ export function SidebarProfileSelector({ activeProfileId }: { activeProfileId: s
         onClick={() => selection.mutate(profile)}
       >
         {selected ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-        <span><strong>{profile.display_name}</strong><small>{profile.facts.length} extracted facts</small></span>
+        <span><strong>{displayName}</strong><small>{profile.facts.length} extracted facts</small></span>
         <em className={cn(profile.readiness === 'ready' && 'ready')}>{readinessLabel[profile.readiness]}</em>
       </button>;
     })}

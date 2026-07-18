@@ -1,7 +1,3 @@
-import { ApplicationFilters } from '../tracking/application-filters';
-import { ApplicationTable } from '../tracking/application-table';
-import { MockDataNotice } from '../../components/states/mock-data-notice';
-
 export function ApplicationsPage() {
-  return <><div className="page-heading"><div><p className="eyebrow">Applications</p><h1>Application tracker</h1><p>Review durable mock application records and their current status.</p></div><ApplicationFilters /></div><MockDataNotice>Application records remain fictional until the application persistence API is connected.</MockDataNotice><ApplicationTable /></>;
+  return <><div className="page-heading"><div><p className="eyebrow">Applications</p><h1>Application tracker</h1><p>Saved backend application records will appear here.</p></div></div><section className="empty-source"><h2>No applications</h2><p>Application persistence is not backend-connected yet. No fictional applications are displayed.</p></section></>;
 }

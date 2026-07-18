@@ -32,5 +32,8 @@ if (backendMaxUnlocked({ profileReady: true, hasJob: false, hasMatch: false, leg
 if (backendMaxUnlocked({ profileReady: true, hasJob: true, hasMatch: false, legacyIndex: 5 }) !== 2) {
   throw new Error('Legacy workflow unlocked Tailor before backend match scoring');
 }
+if (backendMaxUnlocked({ profileReady: true, hasJob: true, hasMatch: true, legacyIndex: 5 }) !== 3) {
+  throw new Error('Legacy workflow unlocked unimplemented post-Tailor stages');
+}
 
 console.log('Validated Phase 1 workflow transitions');

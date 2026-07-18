@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FileText, LayoutDashboard, Settings, UserRound } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { LoadingState } from '../../components/states/loading-state';
-import { useApplicationStore } from '../../stores/react';
 import type { DashboardSection } from '../../stores/state';
 import { DocumentsPage } from '../../features/dashboard/documents-page';
 import { ProfilePage } from '../../features/dashboard/profile-page';
@@ -15,24 +13,14 @@ const navigation = [
   ['applications', 'Applications', LayoutDashboard], ['settings', 'Settings', Settings],
 ] as const;
 
+function initialSection(): DashboardSection {
+  const hash = window.location.hash.slice(1) as DashboardSection;
+  return navigation.some(([id]) => id === hash) ? hash : 'profile';
+}
+
 export default function App() {
-  const hydrated = useApplicationStore((state) => state.hydrated);
-  const hydrate = useApplicationStore((state) => state.hydrate);
-  const section = useApplicationStore((state) => state.dashboardSection);
-  const setSection = useApplicationStore((state) => state.setDashboardSection);
+  const [section, setSection] = useState<DashboardSection>(initialSection);
   const activeProfile = useActiveBackendProfile();
-  const recoveryNotice = useApplicationStore((state) => state.recoveryNotice);
-  const dismissRecovery = useApplicationStore((state) => state.dismissRecoveryNotice);
-  const [routeRecovered, setRouteRecovered] = useState(false);
-
-  useEffect(() => {
-    const hash = window.location.hash.slice(1) as DashboardSection;
-    if (navigation.some(([id]) => id === hash)) setSection(hash);
-    else if (hash) { setSection('profile'); window.location.hash = 'profile'; setRouteRecovered(true); }
-    void hydrate();
-  }, [hydrate, setSection]);
-  if (!hydrated) return <LoadingState />;
-
   const content = section === 'profile' ? <ProfilePage /> : section === 'documents' ? <DocumentsPage /> : section === 'applications' ? <ApplicationsPage /> : <SettingsPage />;
 
   return <main className="dashboard-shell">
@@ -40,14 +28,15 @@ export default function App() {
     <nav className="dashboard-nav" aria-label="Dashboard navigation">
       {navigation.map(([id, label, Icon]) => <Button key={id} variant={section === id ? 'secondary' : 'ghost'} onClick={() => { setSection(id); window.location.hash = id; }}><Icon size={18} />{label}</Button>)}
     </nav>
-    <section className="dashboard-content">{(recoveryNotice || routeRecovered) && <div className="recovery-notice" role="status"><span>{recoveryNotice ?? 'Unknown Dashboard section; returned to Profile.'}</span><button onClick={() => { dismissRecovery(); setRouteRecovered(false); }}>Dismiss</button></div>}{content}</section>
-    <footer className="dashboard-footer">Local mock data · Refresh-safe checkpoints <span>Help · About</span></footer>
+    <section className="dashboard-content">{content}</section>
+    <footer className="dashboard-footer">Local backend data <span>Help · About</span></footer>
   </main>;
 }
 
 function DashboardProfileStatus({ active }: { active: ReturnType<typeof useActiveBackendProfile> }) {
   if (active.state.status === 'loading') return <span className="profile-status">Loading profile…</span>;
-  if (active.state.status === 'missing') return <span className="profile-status">No profile</span>;
+  if (active.state.status === 'missing') return <span className="profile-status">No profile selected</span>;
   if (active.state.status === 'error') return <span className="profile-status error">Backend unavailable <button onClick={() => void active.refetch()}>Retry</button></span>;
-  return <span className={active.state.scanUnlocked ? 'ready' : 'profile-status warning'}>{active.state.scanUnlocked ? 'Profile ready ●' : 'Profile needs review'}</span>;
+  const name = active.state.profile.facts.find((fact) => fact.key === 'full_name')?.value ?? active.state.profile.display_name;
+  return <span className={active.state.scanUnlocked ? 'ready' : 'profile-status warning'}>{name} · {active.state.scanUnlocked ? 'Ready ●' : 'Needs review'}</span>;
 }

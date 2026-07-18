@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 import httpx
+from smoke_cleanup import register_profile
 
 
 BASE_URL = os.environ.get("AI_API_BASE_URL", "http://127.0.0.1:8000")
@@ -27,6 +28,7 @@ def main() -> None:
         )
         profile_response.raise_for_status()
         profile_id = profile_response.json()["id"]
+        register_profile(profile_id)
 
         available = next((provider for provider in providers if provider["models"]), None)
         if available:
