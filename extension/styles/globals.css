@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --background: #f6f8fb;
+  --surface: #ffffff;
+  --foreground: #172033;
+  --muted: #647087;
+  --border: #dfe5ee;
+  --primary: #2857d9;
+  --primary-foreground: #ffffff;
+  --success: #18795b;
+  --warning: #a96500;
+  --danger: #bd3039;
+  --unknown: #667085;
+  --focus: #7aa2ff;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --shadow-card: 0 8px 24px rgb(30 50 80 / 8%);
+  --a4-ratio: 210 / 297;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body { margin: 0; background: var(--background); color: var(--foreground); }
+button, input, textarea, select { font: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
