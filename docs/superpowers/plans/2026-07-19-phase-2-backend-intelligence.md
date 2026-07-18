@@ -183,7 +183,7 @@ git commit -m "feat: scaffold phase 2 backend"
 - Create: `backend/migrations/versions/0001_initial_domain.py`
 - Create: `backend/scripts/validate_migrations.py`
 
-- [ ] **Step 1: Define typed ORM entities**
+- [x] **Step 1: Define typed ORM entities**
 
 Create the required tables: profiles, source_documents, parse_runs, profile_facts, jobs, job_requirements, match_results, generated_documents, document_changes, applications, application_events, fill_plans, operations, and agent_runs. Use UUID strings, timezone-aware timestamps, typed statuses, foreign keys, and JSONB only for parser/agent metadata and flexible payloads.
 
@@ -197,7 +197,7 @@ started_at, completed_at, error_code
 
 Never persist prompts, credentials, or full unredacted provider requests in `agent_runs`.
 
-- [ ] **Step 2: Implement storage protocol**
+- [x] **Step 2: Implement storage protocol**
 
 ```python
 class ObjectStorage(Protocol):
@@ -209,7 +209,7 @@ class ObjectStorage(Protocol):
 
 `FilesystemStorage` rejects traversal, resolves every key under `STORAGE_ROOT`, writes atomically, and returns size plus SHA-256.
 
-- [ ] **Step 3: Create and validate migrations**
+- [x] **Step 3: Create and validate migrations**
 
 ```bash
 docker compose -f backend/compose.yaml exec api alembic upgrade head
@@ -218,7 +218,7 @@ docker compose -f backend/compose.yaml exec api python scripts/validate_migratio
 
 The script confirms every required table and foreign key exists, then prints `Validated initial database schema`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/app/db backend/app/storage backend/alembic.ini backend/migrations backend/scripts
