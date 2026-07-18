@@ -14,6 +14,7 @@ import { openDashboard } from '../../features/shared/open-dashboard';
 import { useActiveBackendProfile } from '../../features/profile/use-active-backend-profile';
 import { useApplicationStore } from '../../stores/react';
 import { selectCurrentStep } from '../../stores/selectors';
+import type { BackendMatch, JobAnalysis } from '../../schemas/backend';
 
 const stepOrder: StepName[] = ['profile', 'scan', 'match', 'tailor', 'fill', 'confirm'];
 
@@ -34,11 +35,24 @@ export default function App() {
   const dismissRecovery = useApplicationStore((state) => state.dismissRecoveryNotice);
   const activeProfile = useActiveBackendProfile();
   const [activeStep, setActiveStep] = useState<StepName>('profile');
+  const [backendJob, setBackendJob] = useState<JobAnalysis | null>(null);
+  const [backendMatch, setBackendMatch] = useState<BackendMatch | null>(null);
   const profileReady = activeProfile.state.status === 'available' && activeProfile.state.scanUnlocked;
   const canonicalIndex = profileReady ? stepOrder.indexOf(workflowStep) : 0;
   const activeIndex = stepOrder.indexOf(activeStep);
 
   useEffect(() => { void hydrate(); }, [hydrate]);
+  useEffect(() => {
+    const profileId = activeProfile.profileId;
+    setBackendJob(null); setBackendMatch(null);
+    if (!profileId) return;
+    void browser.storage.local.get(['activeJobAnalysis', 'activeBackendMatch']).then((stored) => {
+      const savedJob = stored.activeJobAnalysis as JobAnalysis | undefined;
+      const savedMatch = stored.activeBackendMatch as BackendMatch | undefined;
+      if (savedJob?.profile_id === profileId) setBackendJob(savedJob);
+      if (savedMatch?.profile_id === profileId) setBackendMatch(savedMatch);
+    });
+  }, [activeProfile.profileId]);
   useEffect(() => { setActiveStep(profileReady ? workflowStep : 'profile'); }, [profileReady, status, workflowStep]);
   if (!hydrated) return <LoadingState />;
 
@@ -52,20 +66,26 @@ export default function App() {
   };
   const profile = activeProfile.state.status === 'available' ? activeProfile.state.profile : null;
   const verifiedFacts = profile?.facts.filter((fact) => fact.verified).length ?? 0;
+  const displayedJob = backendJob ?? job;
+  const analyzed = (analysis: JobAnalysis) => {
+    setBackendJob(analysis); setBackendMatch(null);
+    void browser.storage.local.set({ activeJobAnalysis: analysis }).then(() => analyze());
+  };
+  const scored = (match: BackendMatch) => { setBackendMatch(match); void browser.storage.local.set({ activeBackendMatch: match }); };
 
   return <main className="sidepanel-shell">
     <header className="sidepanel-header">
       <div className="header-row"><strong>Job Copilot</strong><Button variant="ghost" size="sm" onClick={() => void openDashboard('profile')}>Profile <ExternalLink size={14} /></Button></div>
       {profile ? <p className="candidate-meta"><strong>{profile.display_name}</strong><span>{verifiedFacts}/{profile.facts.length} facts verified</span></p> : null}
-      <h1>{job.title}</h1><p>{job.company} · {job.ats === 'greenhouse' ? 'Greenhouse' : 'Generic ATS'} {profileReady ? <span className="ready">● Profile ready</span> : null}</p>
+      <h1>{displayedJob.title}</h1><p>{displayedJob.company ?? 'Company not provided'} · {'ats' in displayedJob && displayedJob.ats === 'greenhouse' ? 'Greenhouse' : 'Analyzed job'} {profileReady ? <span className="ready">● Profile ready</span> : null}</p>
     </header>
     <StepIndicator current={activeStep} maxUnlocked={canonicalIndex} onNavigate={navigate} />
     <section className="sidepanel-content">
       {recoveryNotice && <div className="recovery-notice" role="status"><span>{recoveryNotice}</span><button onClick={dismissRecovery}>Dismiss</button></div>}
-      {activeStep === 'profile' ? <ProfileStage active={activeProfile} /> : status === 'failed' ? <ErrorState title="Analysis interrupted" message={error ?? 'The mock operation failed.'} onRetry={() => void retry()} /> : activeStep === 'scan' ? <ScanView readOnly={activeIndex < canonicalIndex} /> : activeStep === 'match' ? <MatchView /> : activeStep === 'tailor' ? <TailorView readOnly={activeIndex < canonicalIndex} /> : activeStep === 'fill' ? <FillView readOnly={activeIndex < canonicalIndex} /> : <ConfirmView />}
+      {activeStep === 'profile' ? <ProfileStage active={activeProfile} /> : status === 'failed' ? <ErrorState title="Analysis interrupted" message={error ?? 'The operation failed.'} onRetry={() => void retry()} /> : activeStep === 'scan' ? <ScanView profileId={activeProfile.profileId!} savedJob={backendJob} readOnly={activeIndex < canonicalIndex} onAnalyzed={analyzed} /> : activeStep === 'match' && backendJob ? <MatchView profileId={activeProfile.profileId!} job={backendJob} savedMatch={backendMatch} onScored={scored} /> : activeStep === 'match' ? <ErrorState title="Analyze a job first" message="Return to Scan and submit a job description." /> : activeStep === 'tailor' ? <TailorView readOnly={activeIndex < canonicalIndex} /> : activeStep === 'fill' ? <FillView readOnly={activeIndex < canonicalIndex} /> : <ConfirmView />}
     </section>
     <footer className="sidepanel-footer">
-      {activeStep === 'profile' ? <><Button variant="secondary" onClick={() => void openDashboard('profile')}>Open Profile</Button><Button disabled={!profileReady} onClick={() => setActiveStep('scan')}>Continue to Scan</Button></> : activeIndex < canonicalIndex ? <><Button variant="secondary" onClick={() => setActiveStep(stepOrder[Math.max(0, activeIndex - 1)])}>Previous</Button><Button onClick={() => setActiveStep(stepOrder[activeIndex + 1])}>Continue</Button></> : activeStep === 'scan' ? <><Button variant="secondary" onClick={() => void analyze({ fail: true })}>Simulate error</Button><Button onClick={() => void analyze()}>Analyze job</Button></> : activeStep === 'match' ? <><Button variant="secondary" onClick={() => setActiveStep('scan')}>Review scan</Button><Button onClick={() => void transitionTo('tailoring')}>Continue</Button></> : activeStep === 'tailor' ? <><Button variant="secondary" onClick={() => void openDashboard('documents')}>Review details</Button><Button onClick={() => { void transitionTo('reviewing').then(() => transitionTo('ready_to_fill')); }}>Approve set</Button></> : activeStep === 'fill' ? <><Button variant="secondary">Rescan fields</Button><Button disabled={!fillPlan.entries.some((entry) => entry.selected)} onClick={() => void simulateFill()}>Fill {fillPlan.entries.filter((entry) => entry.selected).length} approved</Button></> : <><Button variant="secondary" onClick={() => setActiveStep('fill')}>Back to fields</Button><Button onClick={() => void markReady()}>Mark as ready</Button></>}
+      {activeStep === 'profile' ? <><Button variant="secondary" onClick={() => void openDashboard('profile')}>Open Profile</Button><Button disabled={!profileReady} onClick={() => setActiveStep('scan')}>Continue to Scan</Button></> : activeIndex < canonicalIndex ? <><Button variant="secondary" onClick={() => setActiveStep(stepOrder[Math.max(0, activeIndex - 1)])}>Previous</Button><Button onClick={() => setActiveStep(stepOrder[activeIndex + 1])}>Continue</Button></> : activeStep === 'scan' ? <><Button variant="secondary" onClick={() => setActiveStep('profile')}>Profile</Button><span className="footer-hint">Analyze from the form above</span></> : activeStep === 'match' ? <><Button variant="secondary" onClick={() => setActiveStep('scan')}>Review scan</Button><Button disabled={!backendMatch} onClick={() => void transitionTo('tailoring')}>Continue</Button></> : activeStep === 'tailor' ? <><Button variant="secondary" onClick={() => void openDashboard('documents')}>Review details</Button><Button onClick={() => { void transitionTo('reviewing').then(() => transitionTo('ready_to_fill')); }}>Approve set</Button></> : activeStep === 'fill' ? <><Button variant="secondary">Rescan fields</Button><Button disabled={!fillPlan.entries.some((entry) => entry.selected)} onClick={() => void simulateFill()}>Fill {fillPlan.entries.filter((entry) => entry.selected).length} approved</Button></> : <><Button variant="secondary" onClick={() => setActiveStep('fill')}>Back to fields</Button><Button onClick={() => void markReady()}>Mark as ready</Button></>}
     </footer>
   </main>;
 }

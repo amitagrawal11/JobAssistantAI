@@ -438,27 +438,27 @@ git commit -m "feat: add OpenAI and Ollama provider settings"
 - Modify: `extension/api/jobs.ts`
 - Modify: `extension/features/job-analysis/{scan-view,match-view}.tsx`
 
-- [ ] **Step 1: Define evidence-bearing agent outputs**
+- [x] **Step 1: Define evidence-bearing agent outputs**
 
 `JobAnalystAgent` returns requirements with category, required/preferred, hard-gate flag, normalized text, and exact job-text evidence offsets. `CandidateEvidenceAgent` returns matched/partial/missing/unknown, verified source fact IDs, reason, and bounded confidence. Neither returns a final score.
 
-- [ ] **Step 2: Delimit untrusted inputs in versioned prompts**
+- [x] **Step 2: Delimit untrusted inputs in versioned prompts**
 
 Prompts state that job/resume content is data, embedded instructions are ignored, provider/model changes cannot be requested by content, and every classification needs evidence or an explicit gap.
 
-- [ ] **Step 3: Implement deterministic aggregation**
+- [x] **Step 3: Implement deterministic aggregation**
 
 Apply the fixed weights: hard requirements 20, required skills 30, relevant experience 20, responsibilities 15, seniority/title 5, education/certifications 5, semantic alignment 5. Validate categories, cap every component, distinguish missing/unknown, show hard-gate failures, and emit `scoringVersion`.
 
-- [ ] **Step 4: Add pasted-job and match APIs**
+- [x] **Step 4: Add pasted-job and match APIs**
 
 `POST /jobs/analyze` invokes Job Analyst and stores requirements/agent provenance. `POST /matches/score` invokes Candidate Evidence, validates fact references, deterministically aggregates, and persists the explainable result.
 
-- [ ] **Step 5: Prove repeatability and instruction resistance**
+- [x] **Step 5: Prove repeatability and instruction resistance**
 
 `smoke_scoring.py` runs the same validated agent outputs twice and asserts byte-equivalent component/final scores. It rejects out-of-range classifications, missing evidence, unverified facts, and a fixture containing provider-switch/secret-exfiltration instructions.
 
-- [ ] **Step 6: Replace Phase 1 Scan/Match mocks**
+- [x] **Step 6: Replace Phase 1 Scan/Match mocks**
 
 Add pasted title/company/location/URL/job description inputs, operation progress, backend evidence groups, provider/model provenance, and a clear backend-unavailable/manual-edit state. Label the result Job Copilot’s explainable match score.
 

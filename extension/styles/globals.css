@@ -64,6 +64,7 @@ button, input, textarea, select { font: inherit; }
 .step-indicator li.complete span { background: #dff4eb; color: var(--success); }
 .sidepanel-content { overflow: auto; padding: 1rem; }
 .sidepanel-footer { display: flex; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; background: white; border-top: 1px solid var(--border); }
+.footer-hint { align-self: center; color: var(--muted); font-size: .72rem; }
 .state-panel { min-height: 12rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: .65rem; padding: 1.5rem; color: var(--muted); }
 .state-panel h2, .state-panel p { margin: 0; }
 .state-panel h2 { color: var(--foreground); font-size: 1.1rem; }
@@ -91,6 +92,7 @@ button, input, textarea, select { font: inherit; }
 .detected-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .45rem; margin-top: .5rem; }
 .detected-grid span { display: flex; align-items: center; gap: .35rem; padding: .55rem; color: var(--success); background: #eff9f5; border-radius: var(--radius-sm); font-size: .75rem; font-weight: 700; }
 .detected-grid span:last-child { grid-column: 1 / -1; }
+.job-metadata-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }.backend-match-items { display: grid; gap: .6rem; }.backend-match-items .requirement-title { align-items: center; }.backend-match-items .requirement-title svg { width: 1rem; flex: 0 0 auto; }
 .field-label { display: grid; gap: .4rem; color: var(--foreground); font-size: .82rem; font-weight: 700; }
 .field-label > span { justify-self: end; color: var(--muted); font-size: .7rem; font-weight: 500; }
 .inline-actions { display: flex; justify-content: space-between; }

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import tempfile
+
 from fastapi import APIRouter
 from sqlalchemy import create_engine, text
 
@@ -15,9 +17,12 @@ def health() -> dict[str, str]:
     with create_engine(settings.database_url).connect() as connection:
         connection.execute(text("SELECT 1"))
     settings.storage_root.mkdir(parents=True, exist_ok=True)
-    probe = settings.storage_root / ".healthcheck"
-    probe.write_text("ok", encoding="utf-8")
-    probe.unlink()
+    with tempfile.NamedTemporaryFile(
+        dir=settings.storage_root,
+        prefix=".healthcheck-",
+    ) as probe:
+        probe.write(b"ok")
+        probe.flush()
     return {
         "status": "ok",
         "database": "ok",

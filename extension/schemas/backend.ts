@@ -113,6 +113,27 @@ export const providerTestSchema = z.object({
   provider: z.enum(['ollama', 'openai']), model: z.string(), ok: z.boolean(), message: z.string(),
 });
 export const aiPreferenceSchema = z.object({ provider: z.enum(['ollama', 'openai']), model: z.string() });
+export const jobRequirementSchema = z.object({
+  requirement_id: z.string(),
+  category: z.enum(['hard_requirements','required_skills','relevant_experience','responsibilities','seniority_title','education_certifications','semantic_alignment']),
+  required: z.boolean(), hard_gate: z.boolean(), normalized_text: z.string(), evidence_text: z.string(),
+  evidence_start: z.number().int().nonnegative(), evidence_end: z.number().int().positive(),
+});
+export const jobAnalysisSchema = z.object({
+  job_id: z.string().uuid(), operation_id: z.string().uuid(), profile_id: z.string().uuid(), title: z.string(), company: z.string().nullable(),
+  location: z.string().nullable(), source_url: z.string().nullable(), description: z.string(),
+  requirements: z.array(jobRequirementSchema), provider: z.string(), model: z.string(), prompt_version: z.string(),
+});
+export const matchItemBackendSchema = z.object({
+  requirement_id: z.string(), requirement: z.string(), category: jobRequirementSchema.shape.category,
+  classification: z.enum(['matched','partial','missing','unknown']), source_fact_ids: z.array(z.string()),
+  reason: z.string(), confidence: z.number().min(0).max(1), score_contribution: z.number(), hard_gate: z.boolean(),
+});
+export const backendMatchSchema = z.object({
+  match_id: z.string().uuid(), operation_id: z.string().uuid(), profile_id: z.string().uuid(), job_id: z.string().uuid(),
+  score: z.number().min(0).max(100), scoring_version: z.string(), components: z.record(z.string(), z.number()),
+  hard_gate_failures: z.array(z.string()), items: z.array(matchItemBackendSchema), provider: z.string(), model: z.string(), prompt_version: z.string(),
+});
 
 export type BackendProfile = z.infer<typeof backendProfileSchema>;
 export type ProfileCreate = z.infer<typeof profileCreateSchema>;
@@ -125,3 +146,5 @@ export type DocumentParse = z.infer<typeof documentParseSchema>;
 export type SourcePreview = z.infer<typeof sourcePreviewSchema>;
 export type ProviderInfo = z.infer<typeof providerInfoSchema>;
 export type AiPreference = z.infer<typeof aiPreferenceSchema>;
+export type JobAnalysis = z.infer<typeof jobAnalysisSchema>;
+export type BackendMatch = z.infer<typeof backendMatchSchema>;

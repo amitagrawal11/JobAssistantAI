@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from ollama import Client
 from pydantic import BaseModel
@@ -9,6 +9,41 @@ from app.models.ai import AgentProvenance, AgentRequest, AgentResult, ProviderIn
 
 
 OutputT = TypeVar("OutputT", bound=BaseModel)
+
+_UNSUPPORTED_SCHEMA_KEYS = {
+    "default",
+    "exclusiveMaximum",
+    "exclusiveMinimum",
+    "maxItems",
+    "maxLength",
+    "maximum",
+    "minItems",
+    "minLength",
+    "minimum",
+    "title",
+}
+
+
+def _strip_unsupported_schema_keys(value: Any) -> Any:
+    if isinstance(value, dict):
+        cleaned: dict[str, Any] = {}
+        for key, item in value.items():
+            if key in {"properties", "$defs"} and isinstance(item, dict):
+                cleaned[key] = {
+                    name: _strip_unsupported_schema_keys(definition)
+                    for name, definition in item.items()
+                }
+            elif key not in _UNSUPPORTED_SCHEMA_KEYS:
+                cleaned[key] = _strip_unsupported_schema_keys(item)
+        return cleaned
+    if isinstance(value, list):
+        return [_strip_unsupported_schema_keys(item) for item in value]
+    return value
+
+
+def ollama_compatible_schema(output_type: type[BaseModel]) -> dict[str, Any]:
+    """Keep structural validation while removing grammar-unsupported annotations."""
+    return _strip_unsupported_schema_keys(output_type.model_json_schema())
 
 
 class OllamaProvider:
@@ -46,10 +81,13 @@ class OllamaProvider:
                 {"role": "system", "content": f"Role: {request.role}. Return only the requested schema."},
                 {"role": "user", "content": str(request.inputs)},
             ],
-            format=output_type.model_json_schema(),
+            format=ollama_compatible_schema(output_type),
             stream=False,
             think=False,
-            options={"temperature": 0, "num_predict": 32},
+            options={
+                "temperature": 0,
+                "num_predict": 32 if request.prompt_version == "connection-v1" else 2048,
+            },
         )
         output = output_type.model_validate_json(response.message.content)
         return AgentResult(

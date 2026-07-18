@@ -11,6 +11,8 @@ from app.api.profiles import router as profiles_router
 from app.api.source_preview import router as source_preview_router
 from app.api.operations import router as operations_router
 from app.api.ai import router as ai_router
+from app.api.jobs import router as jobs_router
+from app.api.matches import router as matches_router
 from app.config import get_settings
 from app.errors import DomainError, domain_error_response
 from app.security import DevelopmentBearerTokenMiddleware
@@ -48,6 +50,8 @@ def create_app() -> FastAPI:
     application.include_router(source_preview_router)
     application.include_router(operations_router)
     application.include_router(ai_router)
+    application.include_router(jobs_router)
+    application.include_router(matches_router)
     return application
 
 
