@@ -34,9 +34,6 @@ class JobAnalysisService:
                     prompt_version=JOB_ANALYST_PROMPT_VERSION, schema_version="job-requirements-v1",
                     inputs={
                         "instructions": JOB_ANALYST_PROMPT,
-                        "provided_title": request.title,
-                        "provided_company": request.company,
-                        "provided_location": request.location,
                         "untrusted_job_text": f"<JOB_DATA>{request.description}</JOB_DATA>",
                     },
                 ),
@@ -51,9 +48,9 @@ class JobAnalysisService:
             ) from error
         result.output.requirements = self._validated_requirements(result.output, request.description)
         job = Job(
-            title=result.output.title or request.title, company=result.output.company or request.company,
+            title=result.output.title, company=result.output.company,
             raw_text=request.description, status=RecordStatus.ready,
-            job_metadata={"location": result.output.location or request.location, "source_url": request.source_url,
+            job_metadata={"location": result.output.location, "source_url": None,
                           "provider": provider_id, "model": model, "prompt_version": JOB_ANALYST_PROMPT_VERSION},
         )
         self.session.add(job)
@@ -77,7 +74,7 @@ class JobAnalysisService:
         return JobAnalyzeResponse(
             job_id=str(job.id), operation_id=str(operation.id), profile_id=str(profile.id),
             title=job.title, company=job.company,
-            location=job.job_metadata.get("location"), source_url=request.source_url,
+            location=job.job_metadata.get("location"), source_url=None,
             description=request.description, requirements=result.output.requirements,
             provider=provider_id, model=model, prompt_version=JOB_ANALYST_PROMPT_VERSION,
         )

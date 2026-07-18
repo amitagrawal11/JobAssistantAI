@@ -27,4 +27,11 @@ for (const file of runtimeFiles) {
   }
 }
 
+const scanSource = readFileSync(resolve('features/job-analysis/scan-view.tsx'), 'utf8');
+for (const removedLabel of ['>Title<', '>Company<', '>Location<', '>Source URL<']) {
+  if (scanSource.includes(removedLabel)) {
+    throw new Error(`Scan reintroduced removed metadata control: ${removedLabel}`);
+  }
+}
+
 console.log('Validated runtime screens contain no Phase 1 mock data');

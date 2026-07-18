@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 
 from app.models.common import ApiModel
 
@@ -43,11 +43,9 @@ class JobAnalystOutput(ApiModel):
 
 
 class JobAnalyzeRequest(ApiModel):
+    model_config = ConfigDict(from_attributes=True, extra="forbid", str_strip_whitespace=True)
+
     profile_id: str
-    title: str = Field(min_length=1, max_length=240)
-    company: str | None = Field(default=None, max_length=240)
-    location: str | None = Field(default=None, max_length=240)
-    source_url: str | None = Field(default=None, max_length=2000)
     description: str = Field(min_length=20, max_length=100_000)
 
 

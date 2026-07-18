@@ -4,6 +4,7 @@ import {
   backendMaxUnlocked,
   isScanReadOnly,
 } from '../features/application/backend-workflow';
+import { canAnalyzeDescription } from '../features/job-analysis/scan-contract';
 
 const repository = new MemorySessionRepository();
 const store = createApplicationStore(repository);
@@ -34,6 +35,15 @@ if (backendMaxUnlocked({ profileReady: true, hasJob: true, hasMatch: false, lega
 }
 if (backendMaxUnlocked({ profileReady: true, hasJob: true, hasMatch: true, legacyIndex: 5 }) !== 3) {
   throw new Error('Legacy workflow unlocked unimplemented post-Tailor stages');
+}
+if (canAnalyzeDescription(' '.repeat(25))) {
+  throw new Error('Whitespace-only job description was accepted');
+}
+if (canAnalyzeDescription('x'.repeat(19))) {
+  throw new Error('Short job description was accepted');
+}
+if (!canAnalyzeDescription(`  ${'x'.repeat(20)}  `)) {
+  throw new Error('Valid trimmed job description was rejected');
 }
 
 console.log('Validated Phase 1 workflow transitions');

@@ -1,7 +1,7 @@
 import { backendMatchSchema, jobAnalysisSchema, type JobAnalysis } from '../schemas/backend';
 import { apiRequest } from './client';
 
-export function analyzeJob(input: { profile_id: string; title: string; company?: string; location?: string; source_url?: string; description: string }) {
+export function analyzeJob(input: { profile_id: string; description: string }) {
   return apiRequest('/jobs/analyze', jobAnalysisSchema, { method: 'POST', body: JSON.stringify(input) }, 360_000);
 }
 
