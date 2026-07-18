@@ -24,6 +24,7 @@ export interface ApplicationActions {
   setFactValue(factId: string, value: string): Promise<void>;
   verifyFact(factId: string): Promise<void>;
   rejectFact(factId: string): Promise<void>;
+  setReusableAnswer(key: string, value: string): Promise<void>;
   approveTailoredChange(changeId: string): Promise<void>;
   rejectTailoredChange(changeId: string): Promise<void>;
   approveFieldEntry(fieldId: string, selected: boolean): Promise<void>;
@@ -99,6 +100,10 @@ export function createApplicationStore(repository: SessionRepository) {
       },
       rejectFact: async (factId) => {
         set((state) => ({ profile: { ...state.profile, facts: state.profile.facts.filter((fact) => fact.id !== factId), verification: { ...state.profile.verification, verifiedFactIds: state.profile.verification.verifiedFactIds.filter((id) => id !== factId) } } }));
+        await persist();
+      },
+      setReusableAnswer: async (key, value) => {
+        set((state) => ({ profile: { ...state.profile, reusableAnswers: { ...state.profile.reusableAnswers, [key]: value } } }));
         await persist();
       },
       approveTailoredChange: async (changeId) => {

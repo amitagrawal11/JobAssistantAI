@@ -5,6 +5,9 @@ import { LoadingState } from '../../components/states/loading-state';
 import { useApplicationStore } from '../../stores/react';
 import type { DashboardSection } from '../../stores/state';
 import { DocumentsPage } from '../../features/dashboard/documents-page';
+import { ProfilePage } from '../../features/dashboard/profile-page';
+import { ApplicationsPage } from '../../features/dashboard/applications-page';
+import { SettingsPage } from '../../features/dashboard/settings-page';
 
 const navigation = [
   ['profile', 'Profile', UserRound], ['documents', 'Documents', FileText],
@@ -25,12 +28,14 @@ export default function App() {
   }, [hydrate, setSection]);
   if (!hydrated) return <LoadingState />;
 
+  const content = section === 'profile' ? <ProfilePage /> : section === 'documents' ? <DocumentsPage /> : section === 'applications' ? <ApplicationsPage /> : <SettingsPage />;
+
   return <main className="dashboard-shell">
     <header className="dashboard-header"><strong>Job Copilot Dashboard</strong><span className="ready">Profile ready ●</span></header>
     <nav className="dashboard-nav" aria-label="Dashboard navigation">
       {navigation.map(([id, label, Icon]) => <Button key={id} variant={section === id ? 'secondary' : 'ghost'} onClick={() => { setSection(id); window.location.hash = id; }}><Icon size={18} />{label}</Button>)}
     </nav>
-    <section className="dashboard-content">{section === 'documents' ? <DocumentsPage /> : <><p className="eyebrow">{section}</p><h1>{section[0].toUpperCase() + section.slice(1)}</h1><p>{profile.personal.fullName} · Phase 1 content module ready for implementation.</p><div className="dashboard-placeholder">Dashboard content area</div></>}</section>
+    <section className="dashboard-content">{content}</section>
     <footer className="dashboard-footer">Local mock data · Refresh-safe checkpoints <span>Help · About</span></footer>
   </main>;
 }
