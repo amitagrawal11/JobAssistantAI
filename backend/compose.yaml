@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: jobcopilot
+      POSTGRES_USER: jobcopilot
+      POSTGRES_PASSWORD: jobcopilot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobcopilot -d jobcopilot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://jobcopilot:jobcopilot@db:5432/jobcopilot}
+      STORAGE_ROOT: ${STORAGE_ROOT:-/app/storage}
+      DEVELOPMENT_BEARER_TOKEN: ${DEVELOPMENT_BEARER_TOKEN:-change-me-for-local-development}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODELS: ${OPENAI_MODELS:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODELS: ${OLLAMA_MODELS:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./storage:/app/storage
+
+volumes:
+  postgres_data:

@@ -80,7 +80,7 @@ docs/manual-testing/phase-2-checklist.md
 - Create: `backend/scripts/validate_config.py`
 - Modify: `.gitignore`
 
-- [ ] **Step 1: Product owner installs Docker Desktop**
+- [x] **Step 1: Product owner installs Docker Desktop**
 
 Run:
 
@@ -91,7 +91,7 @@ docker compose version
 
 Expected: both commands print versions and Docker Desktop reports that the engine is running.
 
-- [ ] **Step 2: Create a Python 3.12 backend image**
+- [x] **Step 2: Create a Python 3.12 backend image**
 
 Use `python:3.12-slim` and install only OS packages required by Docling/OpenCV, PostgreSQL client builds, and Playwright Chromium. Copy `requirements.txt`, install it, copy `app`, and run:
 
@@ -120,7 +120,7 @@ bleach
 
 Resolve and pin exact versions during implementation after the first successful container build; commit the pinned file.
 
-- [ ] **Step 3: Configure PostgreSQL and API services**
+- [x] **Step 3: Configure PostgreSQL and API services**
 
 `compose.yaml` defines `db` with a health check and `api` depending on healthy PostgreSQL. Mount `backend/storage` for artifacts. Expose PostgreSQL only to the Compose network and API on `127.0.0.1:8000`.
 
@@ -139,7 +139,7 @@ OLLAMA_BASE_URL=http://host.docker.internal:11434
 OLLAMA_MODELS=
 ```
 
-- [ ] **Step 4: Add health and error contracts**
+- [x] **Step 4: Add health and error contracts**
 
 `GET /health` returns:
 
@@ -155,7 +155,7 @@ All domain errors map to:
 
 Protect every route except `/health` with the development bearer token.
 
-- [ ] **Step 5: Run config and health checks**
+- [x] **Step 5: Run config and health checks**
 
 ```bash
 docker compose -f backend/compose.yaml build api
@@ -166,7 +166,7 @@ curl http://127.0.0.1:8000/health
 
 Expected: image builds on Python 3.12, config validation prints `Validated backend configuration`, and health returns HTTP 200.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .gitignore backend

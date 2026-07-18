@@ -1,0 +1,3 @@
+# Installed and validated when the parsing adapter is introduced in Task 5.
+torch==2.7.1
+docling==2.113.0

@@ -4,3 +4,9 @@
 node_modules/
 .output/
 dist/
+.env
+backend/.env
+backend/storage/*
+!backend/storage/.gitkeep
+__pycache__/
+*.py[cod]
