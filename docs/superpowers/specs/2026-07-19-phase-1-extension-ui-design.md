@@ -86,6 +86,56 @@ The persistent side-panel shell contains:
 
 The shell supports profile-not-ready, loading, recoverable-error, and unsupported states. Only step content and footer actions change during the journey.
 
+```text
+┌──────────────────────────────────────────┐
+│ Job Copilot                    [Profile] │
+│ Acme · Senior Frontend Engineer          │
+│ Greenhouse                     ● Ready   │
+├──────────────────────────────────────────┤
+│  1 Scan   2 Match   3 Tailor   4 Fill   │
+│                              5 Confirm   │
+├──────────────────────────────────────────┤
+│                                          │
+│        CURRENT STEP CONTENT AREA         │
+│                                          │
+│  Scan                                    │
+│  ┌────────────────────────────────────┐  │
+│  │ Detected job and application data  │  │
+│  └────────────────────────────────────┘  │
+│                                          │
+│  Match                                   │
+│  ┌─────────┐  Evidence and gaps          │
+│  │   78%   │  remain inspectable         │
+│  └─────────┘                             │
+│                                          │
+│  Tailor / Fill / Confirm replace this    │
+│  content without replacing the shell.    │
+│                                          │
+├──────────────────────────────────────────┤
+│ Secondary action      [ Primary action ] │
+└──────────────────────────────────────────┘
+       approximately 360–480 CSS px
+```
+
+When the profile is not ready, the step journey is replaced by a focused setup gate:
+
+```text
+┌──────────────────────────────────────────┐
+│ Job Copilot                              │
+├──────────────────────────────────────────┤
+│                                          │
+│              Profile required            │
+│                                          │
+│ Add your resume and verify your facts    │
+│ before analyzing or filling a job.       │
+│                                          │
+│           [ Set up profile ]             │
+│                                          │
+│       [ Open saved profile ]             │
+│                                          │
+└──────────────────────────────────────────┘
+```
+
 ### Dashboard
 
 The Dashboard has persistent navigation for:
@@ -96,6 +146,51 @@ The Dashboard has persistent navigation for:
 - Settings: reusable answers, sensitive-question preferences, and POC data controls.
 
 Heavy review and editing remain in the Dashboard. The side panel presents concise summaries and links into the relevant Dashboard context.
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ Job Copilot Dashboard                                             Profile ready ●       │
+├──────────────────┬─────────────────────────────────────────────────────────────────────┤
+│                  │                                                                     │
+│  Profile         │  PAGE TITLE                                                         │
+│  Documents       │  Supporting description or active application context              │
+│  Applications    │                                                                     │
+│  Settings        │  ┌───────────────────────────────────────────────────────────────┐  │
+│                  │  │                                                               │  │
+│                  │  │                    PAGE CONTENT AREA                          │  │
+│                  │  │                                                               │  │
+│                  │  │  Profile: fact review and verification                       │  │
+│                  │  │  Documents: A4 resume and cover-letter review                 │  │
+│                  │  │  Applications: tracker and filters                            │  │
+│                  │  │  Settings: reusable answers and preferences                   │  │
+│                  │  │                                                               │  │
+│                  │  └───────────────────────────────────────────────────────────────┘  │
+│                  │                                                                     │
+├──────────────────┴─────────────────────────────────────────────────────────────────────┤
+│ Local mock data · Last saved 14:25                                     Help · About    │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+                        minimum review viewport: 1024 CSS px
+```
+
+The document-review content uses a stable two-region layout inside the Dashboard content area:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Tailored resume · Acme Senior Frontend Engineer          [Download disabled]│
+├───────────────────────────────┬──────────────────────────────────────────────┤
+│ Changes                       │ Preview                                      │
+│                               │                                              │
+│ [✓] Reordered skills          │       ┌────────────────────────────┐         │
+│ [ ] Leadership rewrite        │       │                            │         │
+│ [✓] Project emphasized        │       │        A4 PAGE             │         │
+│                               │       │       210 : 297            │         │
+│ Before / after / reason       │       │                            │         │
+│ Evidence: verified fact IDs   │       └────────────────────────────┘         │
+│                               │                                              │
+├───────────────────────────────┴──────────────────────────────────────────────┤
+│ [Back to side panel]                                  [Approve selected set]│
+└──────────────────────────────────────────────────────────────────────────────┘
+```
 
 ### Shared product components
 
