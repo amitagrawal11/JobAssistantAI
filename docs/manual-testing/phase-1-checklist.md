@@ -1,7 +1,7 @@
 # Phase 1 Manual Acceptance Checklist
 
 **Build date:** 2026-07-19  
-**Chrome version:** Not recorded  
+**Chrome version:** Not recorded
 **Reviewer:** Product owner
 
 Use `extension/.output/chrome-mv3`. Rebuild and reload the extension before starting.
@@ -69,5 +69,5 @@ Mark each item Pass or Fail and add notes for any failure.
 
 ## Sign-off
 
-**Final result:** Pass  
+**Final result:** Pass
 **Notes:** The product owner completed the full journey, reviewed all Dashboard surfaces, and verified immediate Reset synchronization plus backward-only step navigation on 2026-07-19.
