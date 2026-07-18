@@ -30,7 +30,9 @@ No backend profile is copied into Zustand, preventing competing persisted repres
 
 The Dashboard header displays one of: no profile, profile needs review, profile ready, or backend unavailable. It must not show a hard-coded ready state.
 
-The side panel permits the job workflow only when backend readiness is `ready`. Before that, it shows a profile gate linking to the Dashboard and explains whether the user must upload, verify facts, or complete source comparison.
+The side panel uses a six-stage sequence: `Profile → Scan → Match → Tailor → Fill → Confirm`. Profile is an explicit prerequisite stage rather than a separate hidden gate. It shows whether a resume is missing, facts need review, source comparison is incomplete, or the backend profile is ready.
+
+Profile remains directly clickable at every point and opens the Dashboard Profile page. When the backend profile is not `ready`, Profile is the active stage and Scan plus every later stage is locked. The content area explains the remaining profile action and provides a button to open the Dashboard. As soon as backend readiness becomes `ready`, Scan unlocks automatically; later stages continue to follow the existing sequential completion rules.
 
 Once ready, the side panel shows the real candidate display name and verified-fact count near the Profile link. The currently mocked job scan remains available but is visibly labeled as mock until Task 8 replaces it.
 
@@ -49,6 +51,9 @@ Executable extension validation will cover active-profile state mapping and read
 Manual acceptance checks:
 
 - Uploading a resume updates the Dashboard header and side panel without closing either surface.
+- The side panel displays `Profile → Scan → Match → Tailor → Fill → Confirm` in that order.
+- Scan and every later stage remain disabled until backend readiness is `ready`.
+- Clicking Profile opens the Dashboard Profile page whether the profile is incomplete or ready.
 - A profile remains gated until all facts are verified and source comparison is complete.
 - Readiness changes propagate immediately across open extension surfaces.
 - Backend unavailability shows a retryable state and no fictional readiness.
