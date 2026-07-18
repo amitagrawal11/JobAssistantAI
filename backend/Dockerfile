@@ -21,5 +21,6 @@ COPY app ./app
 COPY scripts ./scripts
 COPY alembic.ini ./alembic.ini
 COPY migrations ./migrations
+COPY templates ./templates
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

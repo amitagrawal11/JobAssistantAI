@@ -53,14 +53,15 @@ export async function apiRequest<T>(
   init.signal?.addEventListener('abort', abortFromCaller, { once: true });
 
   try {
+    const headers = new Headers(init.headers);
+    headers.set('Authorization', `Bearer ${backend.bearerToken}`);
+    if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
     const response = await fetch(`${backend.baseUrl}${path}`, {
       ...init,
       signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${backend.bearerToken}`,
-        'Content-Type': 'application/json',
-        ...init.headers,
-      },
+      headers,
     });
     const payload: unknown = await response.json();
     if (!response.ok) {

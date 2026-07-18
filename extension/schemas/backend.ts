@@ -58,9 +58,53 @@ export const factVerificationRequestSchema = z.object({
   source_comparison_resolved: z.boolean().optional(),
 });
 
+export const documentUploadSchema = z.object({
+  document_id: z.string().uuid(),
+  operation_id: z.string().uuid(),
+  filename: z.string(),
+  media_type: z.string(),
+  size_bytes: z.number().int().positive(),
+  sha256: z.string().length(64),
+  status: z.literal('pending'),
+});
+
+export const documentParseSchema = z.object({
+  operation_id: z.string().uuid(),
+  parse_run_id: z.string().uuid(),
+  document_id: z.string().uuid(),
+  status: z.literal('succeeded'),
+});
+
+export const sourcePreviewSchema = z.object({
+  document_id: z.string().uuid(),
+  filename: z.string(),
+  media_kind: z.enum(['pdf', 'docx']),
+  pages: z.array(
+    z.object({
+      number: z.number().int().positive(),
+      width: z.number().positive(),
+      height: z.number().positive(),
+      image_data_url: z.string().nullable(),
+      html: z.string().nullable(),
+    }),
+  ),
+  fact_regions: z.array(
+    z.object({
+      fact_id: z.string().uuid(),
+      page_number: z.number().int().positive(),
+      available: z.boolean(),
+      normalized_box: z.array(z.number().min(0).max(1)).length(4).nullable(),
+      reason: z.string().nullable(),
+    }),
+  ),
+});
+
 export type BackendProfile = z.infer<typeof backendProfileSchema>;
 export type ProfileCreate = z.infer<typeof profileCreateSchema>;
 export type ProfileUpdate = z.infer<typeof profileUpdateSchema>;
 export type FactVerificationRequest = z.infer<
   typeof factVerificationRequestSchema
 >;
+export type DocumentUpload = z.infer<typeof documentUploadSchema>;
+export type DocumentParse = z.infer<typeof documentParseSchema>;
+export type SourcePreview = z.infer<typeof sourcePreviewSchema>;

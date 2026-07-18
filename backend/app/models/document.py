@@ -13,3 +13,10 @@ class DocumentUploadResponse(ApiModel):
     size_bytes: int
     sha256: str
     status: Literal["pending"]
+
+
+class DocumentParseResponse(ApiModel):
+    operation_id: str
+    parse_run_id: str
+    document_id: str
+    status: Literal["succeeded"]

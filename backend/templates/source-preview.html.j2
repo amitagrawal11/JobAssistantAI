@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: white; color: #15233b; }
+      body { padding: 18mm; font: 10.5pt/1.35 Arial, sans-serif; }
+      p { margin: 0 0 3.5mm; white-space: pre-wrap; }
+      .title { margin-bottom: 2mm; text-align: center; font-size: 22pt; font-weight: 700; }
+      .section_header { margin: 5mm 0 2mm; color: #2457a6; font-size: 14pt; font-weight: 700; }
+      .paragraph { margin-bottom: 3mm; }
+      .list_item { margin-left: 5mm; }
+    </style>
+  </head>
+  <body>
+    {% for element in elements %}
+      <p id="{{ element.id | e }}" class="{{ element.element_type | e }}">{{ element.text | e }}</p>
+    {% endfor %}
+  </body>
+</html>

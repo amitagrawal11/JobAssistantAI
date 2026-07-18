@@ -356,23 +356,23 @@ git commit -m "feat: parse resumes with Docling"
 - Modify: `extension/features/profile/fact-review.tsx`
 - Modify: `extension/features/dashboard/profile-page.tsx`
 
-- [ ] **Step 1: Serve safe source pages**
+- [x] **Step 1: Serve safe source pages**
 
 For PDF, provide authenticated page images or a sanitized preview derived from the original while preserving page numbering. For DOCX, render the neutral document to paginated A4 HTML and mark unavailable bbox provenance explicitly. Never inject original active content into the extension.
 
-- [ ] **Step 2: Add source-preview API**
+- [x] **Step 2: Add source-preview API**
 
 `GET /documents/{document_id}/source-preview` returns sanitized page HTML/image descriptors, page dimensions, and fact-region mappings. Content security prevents scripts and external resources.
 
-- [ ] **Step 3: Implement split verification UI**
+- [x] **Step 3: Implement split verification UI**
 
 Dashboard Profile shows paginated source on the left and extracted facts on the right. Selecting a fact navigates to its page and highlights bbox provenance when available. Display a persistent nudge until the user explicitly marks source comparison complete.
 
-- [ ] **Step 4: Manually verify A4 source comparison**
+- [x] **Step 4: Manually verify A4 source comparison**
 
 Check PDF and DOCX at 1024px, page switching, highlight alignment, missing-provenance explanation, fact edits, and readiness transition.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend extension

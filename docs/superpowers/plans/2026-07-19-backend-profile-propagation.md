@@ -17,17 +17,17 @@
 - Create: `extension/scripts/validate-active-profile.ts`
 - Modify: `extension/package.json`
 
-- [ ] **Step 1: Write the failing executable validation**
+- [x] **Step 1: Write the failing executable validation**
 
 Create cases that call `deriveActiveProfileState` with missing identifiers, loading, backend error, `needs_review`, and `ready` profiles. Assert that only backend readiness `ready` unlocks Scan and that error/missing states never do.
 
-- [ ] **Step 2: Run validation and confirm the missing-module failure**
+- [x] **Step 2: Run validation and confirm the missing-module failure**
 
 Run: `pnpm --dir extension validate:active-profile`
 
 Expected: failure because `active-profile-state.ts` does not exist.
 
-- [ ] **Step 3: Implement the minimal state mapper**
+- [x] **Step 3: Implement the minimal state mapper**
 
 Export this discriminated union and pure mapper:
 
@@ -48,7 +48,7 @@ export function deriveActiveProfileState(input: {
 
 For an available profile, set `scanUnlocked` only when `profile.readiness === 'ready'`.
 
-- [ ] **Step 4: Run validation**
+- [x] **Step 4: Run validation**
 
 Run: `pnpm --dir extension validate:active-profile`
 
@@ -65,27 +65,27 @@ Expected: `Validated authoritative backend profile state`.
 - Modify: `extension/features/dashboard/profile-page.tsx`
 - Modify: `extension/features/profile/source-preview.tsx`
 
-- [ ] **Step 1: Implement identifier observation and query sharing**
+- [x] **Step 1: Implement identifier observation and query sharing**
 
 The hook reads `activeProfileId` and `activeDocumentId`, subscribes to `browser.storage.onChanged`, and calls `useQuery` with `profileQueryKey(profileId)`. Disable the query when no identifier exists. Return `deriveActiveProfileState(...)` plus identifiers and `refetch`.
 
-- [ ] **Step 2: Share upload and mutation updates**
+- [x] **Step 2: Share upload and mutation updates**
 
 After upload, let the storage event update consumers. Keep `queryClient.setQueryData(profileQueryKey(profileId), profile)` after fact mutations so Dashboard and side panel receive readiness changes through their QueryClient instances; also persist a lightweight `activeProfileRevision` timestamp after mutation so storage events trigger refetches in other extension documents.
 
-- [ ] **Step 3: Expand the step indicator**
+- [x] **Step 3: Expand the step indicator**
 
 Change the sequence to `Profile, Scan, Match, Tailor, Fill, Confirm`. Profile is always enabled. When profile is incomplete, every later button is disabled. Once ready, Scan is enabled and later stages use the existing workflow-derived maximum. Clicking Profile invokes `openDashboard('profile')`.
 
-- [ ] **Step 4: Replace sidebar mock readiness**
+- [x] **Step 4: Replace sidebar mock readiness**
 
 Remove `state.profile.verification.status` from the side panel. Render Profile as the active prerequisite for missing/loading/error/incomplete states. Show a targeted explanation and Dashboard action. For an available ready profile, show the backend display name and verified-fact count, then enable Scan.
 
-- [ ] **Step 5: Replace the Dashboard hard-coded status**
+- [x] **Step 5: Replace the Dashboard hard-coded status**
 
 Render `No profile`, `Profile needs review`, `Profile ready`, or `Backend unavailable` from the shared hook. Add a retry action for the error state. Do not display a fictional fallback.
 
-- [ ] **Step 6: Compile and validate**
+- [x] **Step 6: Compile and validate**
 
 Run:
 
@@ -107,15 +107,15 @@ Expected: validation message and zero TypeScript errors.
 - Modify: `extension/styles/globals.css`
 - Modify: `docs/superpowers/plans/2026-07-19-phase-2-backend-intelligence.md`
 
-- [ ] **Step 1: Add a reusable mock-data notice**
+- [x] **Step 1: Add a reusable mock-data notice**
 
 Create a compact notice with a `FlaskConical` icon, a required `children` label, and `role="note"`. Use it on Scan and the still-mocked Dashboard pages without changing their workflow behavior.
 
-- [ ] **Step 2: Add six-column and status styles**
+- [x] **Step 2: Add six-column and status styles**
 
 Update `.step-indicator` to six columns. Add styles for profile-state copy, retry controls, verified-fact metadata, and the mock-data notice. Preserve the 360px side-panel layout.
 
-- [ ] **Step 3: Run the complete executable verification set**
+- [x] **Step 3: Run the complete executable verification set**
 
 Run:
 
@@ -130,11 +130,11 @@ git diff --check
 
 Expected: all validation messages, successful WXT production build, and no whitespace errors.
 
-- [ ] **Step 4: Record manual acceptance status**
+- [x] **Step 4: Record manual acceptance status**
 
 Mark Task 6 manual verification complete only after confirming Profile locks Scan until backend readiness is ready, readiness propagates without closing the side panel, refresh preserves the active profile, and the remaining mocks are labeled.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend extension docs/superpowers/plans/2026-07-19-phase-2-backend-intelligence.md docs/superpowers/plans/2026-07-19-backend-profile-propagation.md

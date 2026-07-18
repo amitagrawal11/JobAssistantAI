@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.health import router as health_router
 from app.api.documents import router as documents_router
 from app.api.profiles import router as profiles_router
+from app.api.source_preview import router as source_preview_router
+from app.api.operations import router as operations_router
 from app.config import get_settings
 from app.errors import DomainError, domain_error_response
 from app.security import DevelopmentBearerTokenMiddleware
@@ -42,6 +44,8 @@ def create_app() -> FastAPI:
     application.include_router(health_router)
     application.include_router(profiles_router)
     application.include_router(documents_router)
+    application.include_router(source_preview_router)
+    application.include_router(operations_router)
     return application
 
 

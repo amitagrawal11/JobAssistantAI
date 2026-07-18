@@ -15,6 +15,7 @@
     "validate:fixtures": "tsx scripts/validate-fixtures.ts",
     "validate:workflow": "tsx scripts/validate-workflow.ts",
     "validate:sync": "tsx scripts/validate-sync.ts",
+    "validate:active-profile": "tsx scripts/validate-active-profile.ts",
     "inspect:manifest": "tsx scripts/inspect-manifest.ts",
     "postinstall": "wxt prepare"
   },

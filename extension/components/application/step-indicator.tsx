@@ -1,6 +1,6 @@
 import { cn } from '../../lib/cn';
 
-const steps = ['Scan', 'Match', 'Tailor', 'Fill', 'Confirm'] as const;
+const steps = ['Profile', 'Scan', 'Match', 'Tailor', 'Fill', 'Confirm'] as const;
 export type StepName = Lowercase<(typeof steps)[number]>;
 
 export function StepIndicator({ current, maxUnlocked, onNavigate }: { current: StepName; maxUnlocked: number; onNavigate: (step: StepName) => void }) {

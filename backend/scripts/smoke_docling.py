@@ -13,8 +13,6 @@ from sqlalchemy import select
 from app.config import get_settings
 from app.db.entities import Operation, OperationStatus, ParseRun, ProfileFact
 from app.db.session import get_session_factory
-from app.documents.docling_parser import DoclingParser
-from app.documents.service import DocumentProcessingService
 from app.storage.filesystem import FilesystemStorage
 
 
@@ -53,14 +51,13 @@ def upload(
     return response.json()
 
 
-def process(operation_id: str, parser: DoclingParser) -> None:
-    settings = get_settings()
-    with get_session_factory()() as session, session.begin():
-        DocumentProcessingService(
-            session=session,
-            storage=FilesystemStorage(settings.storage_root),
-            parser=parser,
-        ).process(uuid.UUID(operation_id))
+def process(operation_id: str) -> None:
+    with httpx.Client(base_url=BASE_URL, timeout=120) as client:
+        response = client.post(
+            f"/operations/{operation_id}/execute", headers=HEADERS
+        )
+        response.raise_for_status()
+        assert response.json()["status"] == "succeeded"
 
 
 def main() -> None:
@@ -73,9 +70,8 @@ def main() -> None:
             client, profile_id, "jordan-lee-resume.docx", DOCX_MEDIA_TYPE
         )
 
-    parser = DoclingParser()
-    process(pdf_upload["operation_id"], parser)
-    process(docx_upload["operation_id"], parser)
+    process(pdf_upload["operation_id"])
+    process(docx_upload["operation_id"])
 
     settings = get_settings()
     storage = FilesystemStorage(settings.storage_root)
@@ -127,7 +123,7 @@ def main() -> None:
         session.flush()
         repeated_operation_id = str(repeated_operation.id)
 
-    process(repeated_operation_id, parser)
+    process(repeated_operation_id)
 
     with get_session_factory()() as session:
         pdf_runs = list(
@@ -150,6 +146,40 @@ def main() -> None:
         assert profile["readiness"] == "needs_review"
         assert profile["facts"]
         assert all(not fact["verified"] for fact in profile["facts"])
+
+        pdf_preview_response = client.get(
+            f"/documents/{pdf_upload['document_id']}/source-preview",
+            headers=HEADERS,
+        )
+        pdf_preview_response.raise_for_status()
+        pdf_preview = pdf_preview_response.json()
+        assert pdf_preview["media_kind"] == "pdf"
+        assert pdf_preview["pages"][0]["image_data_url"].startswith(
+            "data:image/png;base64,"
+        )
+        assert pdf_preview["fact_regions"]
+        assert all(region["available"] for region in pdf_preview["fact_regions"])
+        assert all(
+            0 <= coordinate <= 1
+            for region in pdf_preview["fact_regions"]
+            for coordinate in region["normalized_box"]
+        )
+
+        docx_preview_response = client.get(
+            f"/documents/{docx_upload['document_id']}/source-preview",
+            headers=HEADERS,
+        )
+        docx_preview_response.raise_for_status()
+        docx_preview = docx_preview_response.json()
+        assert docx_preview["media_kind"] == "docx"
+        assert "<script" not in docx_preview["pages"][0]["html"].lower()
+        assert 'src="http' not in docx_preview["pages"][0]["html"].lower()
+        assert 'href="http' not in docx_preview["pages"][0]["html"].lower()
+        assert all(
+            not region["available"]
+            and region["reason"] == "DOCX_SOURCE_LAYOUT_APPROXIMATED"
+            for region in docx_preview["fact_regions"]
+        )
 
     print("Validated Docling parsing and neutral provenance")
 
