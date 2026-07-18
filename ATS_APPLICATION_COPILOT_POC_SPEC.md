@@ -3,7 +3,7 @@
 ## POC Product and Implementation Specification
 
 **Status:** Locked for implementation  
-**Version:** 1.2
+**Version:** 1.3
 **Date:** 2026-07-18  
 **Primary client:** Chrome extension  
 **Implementation strategy:** Three phases, each independently demonstrable
@@ -64,13 +64,15 @@ These decisions must not be changed by an implementation agent unless the produc
 
 ## 3. Corrected phase plan
 
-The requested three-phase plan is retained with one correction: Phase 2 is not a separate web application. It is the real browser-integration phase for the extension.
+The three-phase plan is retained with a backend-first correction approved by the product owner. Phase 2 establishes real document and intelligence capabilities through the extension before Phase 3 adds employer-page integration and safe filling.
+
+The detailed section numbers below are retained for change traceability even though the Phase 3 browser-integration section appears before the Phase 2 backend section. Implementation follows the phase labels and the table below, not section-number order.
 
 | Phase | Outcome | External backend |
 | --- | --- | --- |
 | Phase 1 | Complete extension UI using mock data | None |
-| Phase 2 | Extension reads and fills real job pages using local profile data | None |
-| Phase 3 | Docling parsing, scoring, AI tailoring, PDF generation, persistence, and extension integration | Required |
+| Phase 2 | Docling parsing, source verification, scoring, dual-provider AI tailoring, PDF generation, persistence, and extension integration | Required |
+| Phase 3 | Extension reads and safely fills real job pages using backend-backed profile and document data | Required |
 
 Each phase must be usable and reviewable before the next phase begins.
 
@@ -138,7 +140,7 @@ It contains:
    - Reusable answers.
    - Sensitive-question preferences.
    - Data deletion/export entry points.
-   - Backend connection state in Phase 3.
+   - Backend connection and AI provider/model state in Phase 2.
 
 ### 5.2 Side-panel application assistant
 
@@ -529,7 +531,7 @@ Portal detection suggests the status; the user confirms it.
 
 Unverified facts cannot support generated resume claims.
 
-In Phase 3, the fact-review screen also displays the uploaded resume as paginated A4 source pages. Selecting a fact should identify its source page and highlighted region when provenance is available. The user receives a visible reminder when extracted facts have not yet been compared with the rendered source.
+In Phase 2, the fact-review screen also displays the uploaded resume as paginated A4 source pages. Selecting a fact should identify its source page and highlighted region when provenance is available. The user receives a visible reminder when extracted facts have not yet been compared with the rendered source.
 
 ### 5.17 A4 resume-review mockup
 
@@ -615,6 +617,12 @@ On narrower workspace widths, the evidence panel moves below the change list. Th
 │                        │                                                     │
 │                        │ Demographic questions                               │
 │                        │ [Never answer automatically ▾]                      │
+│                        │                                                     │
+│                        │ AI provider       [OpenAI ▾]                        │
+│                        │ Model             [Configured model ▾]              │
+│                        │ ● Connected       [Test connection]                 │
+│                        │ Provider routing determines where selected data is  │
+│                        │ processed. Credentials remain on the backend.       │
 │                        │                                      [Save changes] │
 └────────────────────────┴─────────────────────────────────────────────────────┘
 ```
@@ -694,7 +702,7 @@ The backend does not automate the employer portal. Browser interaction remains i
                          │                     │ Extension workspace │ │
                          │                     └──────────────────────┘ │
                          └────────────────────────────┬──────────────────┘
-                                                      │ HTTPS in Phase 3
+                                                      │ HTTPS in Phase 2
                                       ┌───────────────▼───────────────┐
                                       │       FastAPI backend         │
                                       └───────┬────────┬────────┬─────┘
@@ -776,7 +784,7 @@ Persistence rules:
 - Never persist raw page HTML, employer credentials, cookies, AI secrets, or sensitive logs.
 - Use selectors so React components subscribe only to the state they consume.
 - Components invoke domain actions such as `scanJob`, `analyzeMatch`, `approveResume`, and `executeFillPlan`; they do not write arbitrary workflow states.
-- Backend response caching remains outside Zustand. If Phase 3 needs client-side request caching/retries, add TanStack Query then; do not add it during Phases 1–2.
+- Backend response caching remains outside Zustand. Phase 2 may add TanStack Query for client-side backend request caching/retries; do not copy server cache into Zustand.
 
 ### 6.3.2 Application identity and recoverability
 
@@ -1032,7 +1040,7 @@ project/
 └── README.md
 ```
 
-Phase 1 creates the WXT extension, React surfaces, curated UI components, stores, mock data, and `README.md`. Phase 2 adds the real content script, repositories, messaging, and ATS adapters. Phase 3 creates `backend/` and shared schemas.
+Phase 1 creates the WXT extension, React surfaces, curated UI components, stores, mock data, and `README.md`. Phase 2 creates `backend/`, shared API schemas, provider settings, and extension/backend integration. Phase 3 adds the real content script, messaging, and ATS adapters.
 
 ---
 
@@ -1301,7 +1309,7 @@ type ApplicationStatus =
   | "failed";
 ```
 
-Only store actions may perform legal transitions. Phase 1 uses a mock repository implementing the same interface that Phase 2 will back with Chrome storage and IndexedDB.
+Only store actions may perform legal transitions. Phase 1 uses a mock repository; Phase 2 connects durable domain records to backend repositories while retaining Chrome storage and IndexedDB for extension checkpoints and local files.
 
 ### 10.5 Mock data
 
@@ -1370,15 +1378,15 @@ Phase 1 is complete when all of the following are manually verified:
 
 ---
 
-# Phase 2: Browser integration and local workflow
+# Phase 3: Browser integration and complete workflow
 
-## 13. Phase 2 goal
+## 13. Phase 3 goal
 
-Connect the approved extension UI to the active browser tab. The extension must detect a job page, extract job and form information, store a local candidate profile, map common fields, and fill user-approved fields without a backend.
+Connect the backend-backed extension UI to the active browser tab. The extension must detect a job page, extract job and form information, map verified profile values, and fill only user-approved fields through validated adapters.
 
 This phase proves the extension's core technical differentiator.
 
-## 14. Phase 2 implementation scope
+## 14. Phase 3 implementation scope
 
 ### 14.1 Permissions
 
@@ -1500,21 +1508,13 @@ Each discovered field should include:
 - File upload may use the locally stored resume file where Chrome and the portal allow it. Otherwise highlight the upload field and request manual completion.
 - AI output, UI components, and Zustand actions cannot directly access page elements; execution crosses the validated service-worker/content-script/adapter boundary.
 
-### 14.7 Local profile
+### 14.7 Backend-backed profile and attachments
 
-Until Phase 3 parsing exists:
+Use the verified Phase 2 backend profile and approved document versions. Chrome storage retains workflow checkpoints and preferences; backend repositories remain canonical for profiles, facts, generated documents, and applications. Store a locally selected attachment in IndexedDB only when needed for manual portal attachment. Phase 3 highlights file fields and instructs the user to attach the approved file manually; programmatic file attachment is deferred.
 
-- Support direct Markdown/plain-text paste.
-- Provide editable structured profile fields for common application values.
-- Store lightweight profile data in `chrome.storage.local`.
-- Store uploaded file bytes and larger drafts in IndexedDB.
-- PDF/DOCX upload is stored but marked **Parsing available after backend connection**.
-- Validate storage records with Zod, include `schemaVersion`, and run explicit migrations when the schema changes.
-- Keep transient UI state in memory; do not persist loading flags, open dialogs, or raw page content.
+### 14.8 Backend scoring integration
 
-### 14.8 Local preview scoring
-
-Implement a clearly labeled local preview score using simple deterministic keyword coverage. Its only purpose is to exercise the Match UI. It must be replaced by the Phase 3 scoring engine and must not be presented as a production-quality ATS score.
+Use the Phase 2 deterministic backend score for the extracted job. Preserve the backend-unavailable state and manual continuation; do not introduce a second client-side scoring implementation.
 
 ### 14.9 Application tracking
 
@@ -1522,34 +1522,34 @@ Create/update a local application record when a job is scanned. Let the user man
 
 Generate a durable `applicationId` and normalized `jobFingerprint`; bind the active `tabId` only for the current browser session. Append meaningful application events so a reopened tab can resume the workflow and duplicate scans can be detected.
 
-## 15. Phase 2 acceptance gate
+## 15. Phase 3 acceptance gate
 
-Phase 2 is complete when manually verified that:
+Phase 3 is complete when manually verified that:
 
+- A repository-owned deterministic browser fixture supports repeatable scan, discovery, and fill checks.
+- One live public Greenhouse application is used to validate real hosted ATS detection.
 - The extension requests access only after the user initiates analysis.
 - The current page can be scanned.
 - A job title, company, description, and ATS type are displayed or can be corrected.
 - Generic form fields are discovered with understandable labels.
 - A Greenhouse-hosted application is recognized by the Greenhouse adapter.
-- Name, email, phone, location, and one reusable answer can be mapped from the local profile.
+- Name, email, phone, location, and one reusable answer can be mapped from the verified backend profile.
 - Approved empty fields are filled.
 - The user can inspect source, confidence, and review status before approving a fill plan.
 - Existing non-empty fields are not silently overwritten.
 - Unknown and sensitive questions remain for the user.
 - Dynamic field changes do not crash the side panel.
 - The final Submit control is never triggered.
-- A local application record is created.
+- A durable backend application record is created.
 - Closing and reopening the job in a new tab can reconnect to the durable application record.
 - Replaying the same approved fill request does not duplicate the operation.
-- The extension remains functional without any backend.
+- Backend unavailability produces a readable recovery state and preserves manual portal continuation.
+- Extracted job text is sent to the Phase 2 backend for requirement analysis and deterministic scoring.
+- Truth-constrained tailoring and approved document versions remain connected to the application record.
 
-## 16. Phase 2 explicitly out of scope
+## 16. Phase 3 explicitly out of scope
 
-- Accurate PDF/DOCX parsing.
-- LLM calls.
-- Production match scoring.
-- Truth-constrained resume rewriting.
-- Generated PDF upload.
+- Automated file attachment.
 - Ashby and Workday adapters.
 - Portal account creation or login automation.
 - CAPTCHA handling.
@@ -1557,11 +1557,11 @@ Phase 2 is complete when manually verified that:
 
 ---
 
-# Phase 3: Backend and full integration
+# Phase 2: Backend intelligence and extension integration
 
-## 17. Phase 3 goal
+## 17. Phase 2 goal
 
-Add the minimum backend needed to turn the locally functional extension into the complete POC: resume parsing, candidate fact verification, job analysis, deterministic scoring, AI tailoring, A4/PDF generation, and persisted application records.
+Add the minimum backend needed to replace Phase 1 mock intelligence: resume parsing and source verification, candidate facts, pasted-job analysis, deterministic scoring, OpenAI/Ollama tailoring, A4/PDF generation, persisted applications, and extension integration. Employer-page automation remains Phase 3.
 
 ## 18. Backend technology
 
@@ -1576,7 +1576,8 @@ Use:
 - A local filesystem storage adapter for development.
 - An S3-compatible storage adapter boundary for later deployment.
 - Playwright Python for final PDF rendering.
-- One configurable AI provider implementation behind an internal provider interface.
+- OpenAI and Ollama implementations behind one internal provider interface.
+- Docker Compose for the local backend and PostgreSQL development environment; Ollama remains a host-managed service.
 
 Do not add Celery/Redis for the first working backend. Keep long-running operations behind an `OperationService` interface so a durable worker can be introduced if synchronous processing becomes disruptive. Initialize Docling once per backend worker/process rather than once per request.
 
@@ -1682,6 +1683,13 @@ Create one internal interface for:
 - Cover-letter generation.
 - Drafting non-sensitive application answers.
 
+Implement:
+
+1. `OpenAIProvider`, using backend-only credentials and a server-side model allowlist.
+2. `OllamaProvider`, using a configurable local base URL and configured/installed models.
+
+Dashboard Settings lets the user select an available provider and model, test the connection, and review a privacy-routing notice. Provider/model changes affect new operations only. Every provider-assisted artifact records provider, model, prompt version, and schema version. Provider failure never silently falls back to another provider.
+
 Requirements:
 
 - AI calls occur only on the backend.
@@ -1754,6 +1762,10 @@ POST   /applications
 PATCH  /applications/{application_id}
 GET    /applications
 GET    /operations/{operation_id}
+GET    /ai/providers
+POST   /ai/providers/{provider}/test
+PATCH  /profiles/{profile_id}/ai-preferences
+GET    /documents/{document_id}/source-preview
 ```
 
 Use consistent error responses:
@@ -1789,7 +1801,7 @@ Store flexible parser metadata in JSONB, but keep commonly queried identifiers, 
 
 ## 22. Extension/backend integration
 
-Replace Phase 2 placeholders in this order:
+Replace Phase 1 mock intelligence in this order:
 
 1. Connect profile upload and parsing.
 2. Connect fact verification.
@@ -1797,7 +1809,7 @@ Replace Phase 2 placeholders in this order:
 4. Replace local preview score with backend score.
 5. Connect tailoring and document review.
 6. Load backend-generated A4 HTML preview.
-7. Download/upload approved PDF where supported.
+7. Download the approved PDF and retain it for manual portal attachment in Phase 3.
 8. Synchronize application records.
 
 The extension must retain a readable error state and allow manual continuation when the backend is unavailable.
@@ -1806,27 +1818,26 @@ At this phase, TanStack Query may be added for backend request state, caching, r
 
 For the local POC, use a development bearer token or equivalent minimal protection. Full user authentication and multi-device accounts are post-POC work.
 
-## 23. Phase 3 acceptance gate
+## 23. Phase 2 acceptance gate
 
-Phase 3 is complete when the following complete journey is manually demonstrated:
+Phase 2 is complete when the following backend-backed journey is manually demonstrated:
 
 1. Load the extension.
 2. Upload one PDF or DOCX resume.
 3. Docling parses it.
 4. The user reviews and verifies candidate facts.
    - The user compares extracted facts against the rendered A4 source resume and resolves the review nudge.
-5. Open a supported job page.
-6. The extension extracts the job and application fields.
-7. The backend returns an explainable match score.
-8. The backend proposes truthful resume changes with source fact IDs.
-9. The user accepts/rejects changes.
-10. The A4 preview renders correctly.
-11. The generated PDF downloads successfully.
-12. The extension fills approved application fields.
-13. Sensitive or unknown fields remain under user control.
-14. The extension does not click Submit.
-15. The user records or confirms the application as Applied.
-16. The application appears in the tracker with the correct job and document versions.
+5. The user pastes and edits a job description with title, company, location, and optional source URL.
+6. The backend returns normalized requirements with job-text evidence.
+7. The backend returns an explainable deterministic match score.
+8. The user selects OpenAI or Ollama and an available model in Settings.
+9. The selected provider passes a connection check when configured.
+10. The backend proposes truthful resume changes with source fact IDs.
+11. The user accepts/rejects changes.
+12. The A4 preview renders correctly.
+13. The generated PDF downloads successfully.
+14. The user creates or updates an application record.
+15. The application appears in the tracker with the correct job and document versions.
 
 Also verify:
 
@@ -1834,16 +1845,20 @@ Also verify:
 - No invented resume fact appears in generated content.
 - Backend failure produces a recoverable UI state.
 - A refresh does not lose a completed profile or tracked application.
-- A reopened job reconnects to its durable application by fingerprint without depending on the old tab ID.
-- The executed fields exactly match the approved fill-plan version.
-- A job page containing instruction-like text cannot alter system policy, expose secrets, or bypass truth/review constraints.
+- Provider/model provenance is recorded on AI-assisted artifacts.
+- Selecting an unavailable provider returns a recoverable error without silent fallback.
+- Pasted job content containing instruction-like text cannot alter system policy, expose secrets, switch providers, or bypass truth/review constraints.
 
-## 24. Phase 3 explicitly out of scope
+## 24. Phase 2 explicitly out of scope
 
 - Production authentication and billing.
 - Team or recruiter accounts.
 - Mobile clients.
 - Cross-browser support.
+- Active employer-page inspection.
+- Runtime host permission requests.
+- Content scripts, ATS adapters, field discovery, or field filling.
+- Programmatic file attachment.
 - Automated final submission.
 - CAPTCHA bypass.
 - Workday-specific automation.
