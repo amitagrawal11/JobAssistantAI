@@ -318,19 +318,19 @@ git commit -m "feat: validate and store resume uploads"
 - Modify: `backend/app/documents/service.py`
 - Modify: `backend/app/operations/service.py`
 
-- [ ] **Step 1: Define the parser-neutral contract**
+- [x] **Step 1: Define the parser-neutral contract**
 
 `ParsedDocument` contains document ID, parser/model versions, pages, elements, element IDs/types, text, page number, bounding box, reading order, hierarchy, and provenance. Unknown page/bbox values are null, never fabricated.
 
-- [ ] **Step 2: Initialize Docling once**
+- [x] **Step 2: Initialize Docling once**
 
 Create one `DocumentConverter` during FastAPI lifespan with allowed formats PDF and DOCX. Use the standard digital PDF pipeline first; OCR remains disabled unless the extracted-text quality heuristic declares the document image-heavy or empty.
 
-- [ ] **Step 3: Store lossless and neutral outputs**
+- [x] **Step 3: Store lossless and neutral outputs**
 
 Persist lossless Docling JSON in object storage with parser/model versions, then map to `ParsedDocument` and normalized candidate facts. Exported Markdown may aid debugging but is never canonical.
 
-- [ ] **Step 4: Run parser smoke checks**
+- [x] **Step 4: Run parser smoke checks**
 
 ```bash
 docker compose -f backend/compose.yaml exec api python scripts/smoke_docling.py
@@ -338,7 +338,7 @@ docker compose -f backend/compose.yaml exec api python scripts/smoke_docling.py
 
 Expected: both fictional documents parse; PDF facts contain real page provenance; no fact references a missing element; profile becomes `needs_review`; repeated parse records a new parse run without overwriting the original.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/documents backend/app/models backend/scripts

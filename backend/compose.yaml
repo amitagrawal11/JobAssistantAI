@@ -43,6 +43,8 @@ services:
     volumes:
       - ./storage:/app/storage
       - ../shared:/shared:ro
+      - model_cache:/root/.cache/huggingface
 
 volumes:
   postgres_data:
+  model_cache:

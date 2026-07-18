@@ -12,7 +12,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./requirements.txt
+COPY requirements-docling.txt ./requirements-docling.txt
 RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -r requirements-docling.txt \
     && playwright install --with-deps chromium
 
 COPY app ./app
