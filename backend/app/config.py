@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     openai_models: str = ""
     ollama_base_url: str = "http://host.docker.internal:11434"
     ollama_models: str = ""
+    max_document_bytes: int = Field(
+        default=5 * 1024 * 1024,
+        gt=0,
+        le=25 * 1024 * 1024,
+    )
 
     @field_validator("development_bearer_token")
     @classmethod

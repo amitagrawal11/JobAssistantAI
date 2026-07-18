@@ -286,23 +286,23 @@ git commit -m "feat: connect profile API contracts"
 - Create: `shared/examples/resume/jordan-lee-resume.md`
 - Create during validation: fictional PDF and DOCX fixtures generated from the Markdown source
 
-- [ ] **Step 1: Create fictional source artifacts**
+- [x] **Step 1: Create fictional source artifacts**
 
 Generate PDF and DOCX files from one fictional Jordan Lee source. Keep the generator script and generated small artifacts in `shared/examples`; never use a real candidate resume.
 
-- [ ] **Step 2: Implement upload validation**
+- [x] **Step 2: Implement upload validation**
 
 Accept only PDF and DOCX with a configurable size limit. Validate filename extension, MIME, PDF `%PDF-` signature, DOCX ZIP signature and required OOXML members. Sanitize original filenames and store bytes under generated object keys.
 
-- [ ] **Step 3: Implement upload route and operation record**
+- [x] **Step 3: Implement upload route and operation record**
 
 `POST /profiles/{profile_id}/documents` stores the original, creates source-document and operation records, sets profile readiness to `uploaded`, and returns operation/document IDs. It never logs file bytes or extracted content.
 
-- [ ] **Step 4: Validate positive and negative fixtures**
+- [x] **Step 4: Validate positive and negative fixtures**
 
 `smoke_uploads.py` uploads valid PDF/DOCX plus renamed text, invalid ZIP, oversized input, and unsupported type. Expected safe error codes include `INVALID_DOCUMENT_TYPE`, `INVALID_DOCUMENT_SIGNATURE`, and `DOCUMENT_TOO_LARGE`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend shared
