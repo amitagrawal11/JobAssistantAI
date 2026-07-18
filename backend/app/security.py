@@ -14,7 +14,7 @@ class DevelopmentBearerTokenMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        if request.url.path == "/health":
+        if request.url.path == "/health" or request.method == "OPTIONS":
             return await call_next(request)
 
         supplied = request.headers.get("authorization", "")

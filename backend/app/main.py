@@ -4,7 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
+from app.api.profiles import router as profiles_router
 from app.config import get_settings
+from app.errors import DomainError, domain_error_response
 from app.security import DevelopmentBearerTokenMiddleware
 
 
@@ -19,7 +21,12 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
     application.add_middleware(DevelopmentBearerTokenMiddleware)
+    application.add_exception_handler(
+        DomainError,
+        lambda _request, error: domain_error_response(error),
+    )
     application.include_router(health_router)
+    application.include_router(profiles_router)
     return application
 
 

@@ -237,11 +237,11 @@ git commit -m "feat: add backend persistence boundaries"
 - Modify: `extension/package.json`
 - Modify: `extension/entrypoints/dashboard/main.tsx`
 
-- [ ] **Step 1: Define profile/readiness contracts**
+- [x] **Step 1: Define profile/readiness contracts**
 
 Readiness is one of `uploaded`, `needs_review`, `ready`, or `parse_failed`. Candidate facts include source document, page, bounding box, element IDs, confidence, verification state, and user correction version.
 
-- [ ] **Step 2: Implement profile CRUD and fact verification**
+- [x] **Step 2: Implement profile CRUD and fact verification**
 
 Required routes:
 
@@ -254,11 +254,11 @@ POST  /profiles/{profile_id}/facts/verify
 
 Fact edits create a new version and mark the fact unverified until the user verifies it. Profile readiness becomes `ready` only after the source-comparison nudge is explicitly resolved.
 
-- [ ] **Step 3: Add the extension client boundary**
+- [x] **Step 3: Add the extension client boundary**
 
 Install `@tanstack/react-query`. `api/client.ts` adds base URL, bearer token, timeout/abort, Zod response validation, and stable backend-error mapping. `QueryClientProvider` wraps only extension React entry points; server data is not copied wholesale into Zustand.
 
-- [ ] **Step 4: Run smoke and extension checks**
+- [x] **Step 4: Run smoke and extension checks**
 
 ```bash
 docker compose -f backend/compose.yaml exec api python scripts/smoke_profiles.py
@@ -269,7 +269,7 @@ pnpm build
 
 Expected: fictional profile create/read/edit/verify journey passes; extension builds.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend extension

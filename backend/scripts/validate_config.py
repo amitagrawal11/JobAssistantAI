@@ -63,6 +63,21 @@ def assert_http_contracts() -> None:
     assert status == 200
     assert payload == {"status": "ok"}
 
+    preflight = Request(
+        "http://127.0.0.1:8000/profiles",
+        method="OPTIONS",
+        headers={
+            "Origin": "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    with urlopen(preflight, timeout=5) as response:
+        assert response.status == 200
+        assert response.headers["access-control-allow-origin"] == (
+            "chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        )
+
 
 if __name__ == "__main__":
     assert_environment()

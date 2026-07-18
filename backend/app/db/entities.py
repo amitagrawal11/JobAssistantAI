@@ -21,6 +21,13 @@ class RecordStatus(str, enum.Enum):
     archived = "archived"
 
 
+class ProfileReadiness(str, enum.Enum):
+    uploaded = "uploaded"
+    needs_review = "needs_review"
+    ready = "ready"
+    parse_failed = "parse_failed"
+
+
 class OperationStatus(str, enum.Enum):
     pending = "pending"
     running = "running"
@@ -50,6 +57,12 @@ class Profile(IdentifierMixin, TimestampMixin, Base):
     status: Mapped[RecordStatus] = mapped_column(
         Enum(RecordStatus, name="record_status"), nullable=False, default=RecordStatus.pending
     )
+    readiness: Mapped[ProfileReadiness] = mapped_column(
+        Enum(ProfileReadiness, name="profile_readiness"),
+        nullable=False,
+        default=ProfileReadiness.uploaded,
+    )
+    source_comparison_resolved: Mapped[bool] = mapped_column(nullable=False, default=False)
 
 
 class Operation(IdentifierMixin, TimestampMixin, Base):
@@ -111,12 +124,25 @@ class ProfileFact(IdentifierMixin, TimestampMixin, Base):
     parse_run_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("parse_runs.id", ondelete="CASCADE"), nullable=False
     )
+    source_document_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("source_documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    supersedes_fact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profile_facts.id", ondelete="SET NULL")
+    )
     category: Mapped[str] = mapped_column(String(80), nullable=False)
     fact_key: Mapped[str] = mapped_column(String(160), nullable=False)
     fact_value: Mapped[str] = mapped_column(Text, nullable=False)
     confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
     verified: Mapped[bool] = mapped_column(nullable=False, default=False)
     provenance: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    page_number: Mapped[int | None] = mapped_column()
+    bounding_box: Mapped[list[float]] = mapped_column(JSONB, nullable=False, default=list)
+    element_ids: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    correction_version: Mapped[int] = mapped_column(nullable=False, default=0)
+    is_current: Mapped[bool] = mapped_column(nullable=False, default=True)
 
 
 class Job(IdentifierMixin, TimestampMixin, Base):
