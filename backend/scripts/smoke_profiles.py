@@ -109,6 +109,21 @@ def main() -> None:
     assert status == 200
     assert profile["display_name"] == "Jordan A. Lee"
 
+    status, other_profile = request(
+        "POST",
+        "/profiles",
+        {"display_name": "Earlier Profile"},
+    )
+    assert status == 201
+    status, profile = request(
+        "PATCH", f"/profiles/{profile_id}", {"display_name": "Jordan Latest Lee"}
+    )
+    assert status == 200
+    status, profiles = request("GET", "/profiles")
+    assert status == 200
+    listed_ids = [item["id"] for item in profiles]
+    assert listed_ids.index(profile_id) < listed_ids.index(other_profile["id"])
+
     seed_parser_fact(profile_id)
     status, seeded = request("GET", f"/profiles/{profile_id}")
     assert status == 200

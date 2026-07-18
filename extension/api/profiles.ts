@@ -25,6 +25,10 @@ export function getProfile(profileId: string): Promise<BackendProfile> {
   return apiRequest(`/profiles/${profileId}`, backendProfileSchema);
 }
 
+export function listProfiles(): Promise<BackendProfile[]> {
+  return apiRequest('/profiles', backendProfileSchema.array());
+}
+
 export async function updateProfile(
   profileId: string,
   input: ProfileUpdate,

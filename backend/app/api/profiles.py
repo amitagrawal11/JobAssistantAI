@@ -37,6 +37,11 @@ def create_profile(
     return ProfileService(session).create(request)
 
 
+@router.get("", response_model=list[ProfileResponse])
+def list_profiles(session: Session = Depends(get_session)) -> list[ProfileResponse]:
+    return ProfileService(session).list()
+
+
 @router.get("/{profile_id_value}", response_model=ProfileResponse)
 def get_profile(
     profile_id_value: str, session: Session = Depends(get_session)

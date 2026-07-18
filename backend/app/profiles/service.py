@@ -39,6 +39,23 @@ class ProfileService:
         self._refresh_readiness(profile, facts)
         return self._response(profile, facts)
 
+    def list(self) -> list[ProfileResponse]:
+        profiles = list(
+            self.session.scalars(
+                select(Profile).order_by(
+                    Profile.updated_at.desc(),
+                    Profile.created_at.desc(),
+                )
+            )
+        )
+        responses: list[ProfileResponse] = []
+        for profile in profiles:
+            facts = self._current_facts(profile.id)
+            self._refresh_readiness(profile, facts)
+            responses.append(self._response(profile, facts))
+        self.session.flush()
+        return responses
+
     def update(self, profile_id: uuid.UUID, request: ProfileUpdate) -> ProfileResponse:
         profile = self._get_profile(profile_id)
         changes = request.model_dump(exclude_unset=True)

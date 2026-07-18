@@ -9,9 +9,10 @@ import { MatchView } from '../../features/job-analysis/match-view';
 import { TailorView } from '../../features/tailoring/tailor-view';
 import { FillView } from '../../features/application-fill/fill-view';
 import { ConfirmView } from '../../features/application-fill/confirm-view';
-import { ProfileRequired } from '../../components/application/profile-required';
+import { backendMaxUnlocked, isScanReadOnly } from '../../features/application/backend-workflow';
 import { openDashboard } from '../../features/shared/open-dashboard';
 import { useActiveBackendProfile } from '../../features/profile/use-active-backend-profile';
+import { SidebarProfileSelector } from '../../features/profile/sidebar-profile-selector';
 import { useApplicationStore } from '../../stores/react';
 import { selectCurrentStep } from '../../stores/selectors';
 import type { BackendMatch, JobAnalysis } from '../../schemas/backend';
@@ -38,7 +39,12 @@ export default function App() {
   const [backendJob, setBackendJob] = useState<JobAnalysis | null>(null);
   const [backendMatch, setBackendMatch] = useState<BackendMatch | null>(null);
   const profileReady = activeProfile.state.status === 'available' && activeProfile.state.scanUnlocked;
-  const canonicalIndex = profileReady ? stepOrder.indexOf(workflowStep) : 0;
+  const canonicalIndex = backendMaxUnlocked({
+    profileReady,
+    hasJob: Boolean(backendJob),
+    hasMatch: Boolean(backendMatch),
+    legacyIndex: stepOrder.indexOf(workflowStep),
+  });
   const activeIndex = stepOrder.indexOf(activeStep);
 
   useEffect(() => { void hydrate(); }, [hydrate]);
@@ -53,15 +59,10 @@ export default function App() {
       if (savedMatch?.profile_id === profileId) setBackendMatch(savedMatch);
     });
   }, [activeProfile.profileId]);
-  useEffect(() => { setActiveStep(profileReady ? workflowStep : 'profile'); }, [profileReady, status, workflowStep]);
+  useEffect(() => { if (!profileReady) setActiveStep('profile'); }, [profileReady]);
   if (!hydrated) return <LoadingState />;
 
   const navigate = (next: StepName) => {
-    if (next === 'profile') {
-      setActiveStep('profile');
-      void openDashboard('profile');
-      return;
-    }
     setActiveStep(next);
   };
   const profile = activeProfile.state.status === 'available' ? activeProfile.state.profile : null;
@@ -70,19 +71,20 @@ export default function App() {
   const analyzed = (analysis: JobAnalysis) => {
     setBackendJob(analysis); setBackendMatch(null);
     void browser.storage.local.set({ activeJobAnalysis: analysis }).then(() => analyze());
+    setActiveStep('match');
   };
   const scored = (match: BackendMatch) => { setBackendMatch(match); void browser.storage.local.set({ activeBackendMatch: match }); };
 
   return <main className="sidepanel-shell">
     <header className="sidepanel-header">
-      <div className="header-row"><strong>Job Copilot</strong><Button variant="ghost" size="sm" onClick={() => void openDashboard('profile')}>Profile <ExternalLink size={14} /></Button></div>
+      <div className="header-row"><strong>Job Copilot</strong><Button variant="ghost" size="sm" onClick={() => void openDashboard('profile')}>Open Profile <ExternalLink size={14} /></Button></div>
       {profile ? <p className="candidate-meta"><strong>{profile.display_name}</strong><span>{verifiedFacts}/{profile.facts.length} facts verified</span></p> : null}
       <h1>{displayedJob.title}</h1><p>{displayedJob.company ?? 'Company not provided'} · {'ats' in displayedJob && displayedJob.ats === 'greenhouse' ? 'Greenhouse' : 'Analyzed job'} {profileReady ? <span className="ready">● Profile ready</span> : null}</p>
     </header>
     <StepIndicator current={activeStep} maxUnlocked={canonicalIndex} onNavigate={navigate} />
     <section className="sidepanel-content">
       {recoveryNotice && <div className="recovery-notice" role="status"><span>{recoveryNotice}</span><button onClick={dismissRecovery}>Dismiss</button></div>}
-      {activeStep === 'profile' ? <ProfileStage active={activeProfile} /> : status === 'failed' ? <ErrorState title="Analysis interrupted" message={error ?? 'The operation failed.'} onRetry={() => void retry()} /> : activeStep === 'scan' ? <ScanView profileId={activeProfile.profileId!} savedJob={backendJob} readOnly={activeIndex < canonicalIndex} onAnalyzed={analyzed} /> : activeStep === 'match' && backendJob ? <MatchView profileId={activeProfile.profileId!} job={backendJob} savedMatch={backendMatch} onScored={scored} /> : activeStep === 'match' ? <ErrorState title="Analyze a job first" message="Return to Scan and submit a job description." /> : activeStep === 'tailor' ? <TailorView readOnly={activeIndex < canonicalIndex} /> : activeStep === 'fill' ? <FillView readOnly={activeIndex < canonicalIndex} /> : <ConfirmView />}
+      {activeStep === 'profile' ? <ProfileStage active={activeProfile} /> : status === 'failed' ? <ErrorState title="Analysis interrupted" message={error ?? 'The operation failed.'} onRetry={() => void retry()} /> : activeStep === 'scan' ? <ScanView profileId={activeProfile.profileId!} savedJob={backendJob} readOnly={isScanReadOnly(backendJob)} onAnalyzed={analyzed} /> : activeStep === 'match' && backendJob ? <MatchView profileId={activeProfile.profileId!} job={backendJob} savedMatch={backendMatch} onScored={scored} /> : activeStep === 'match' ? <ErrorState title="Analyze a job first" message="Return to Scan and submit a job description." /> : activeStep === 'tailor' ? <TailorView readOnly={activeIndex < canonicalIndex} /> : activeStep === 'fill' ? <FillView readOnly={activeIndex < canonicalIndex} /> : <ConfirmView />}
     </section>
     <footer className="sidepanel-footer">
       {activeStep === 'profile' ? <><Button variant="secondary" onClick={() => void openDashboard('profile')}>Open Profile</Button><Button disabled={!profileReady} onClick={() => setActiveStep('scan')}>Continue to Scan</Button></> : activeIndex < canonicalIndex ? <><Button variant="secondary" onClick={() => setActiveStep(stepOrder[Math.max(0, activeIndex - 1)])}>Previous</Button><Button onClick={() => setActiveStep(stepOrder[activeIndex + 1])}>Continue</Button></> : activeStep === 'scan' ? <><Button variant="secondary" onClick={() => setActiveStep('profile')}>Profile</Button><span className="footer-hint">Analyze from the form above</span></> : activeStep === 'match' ? <><Button variant="secondary" onClick={() => setActiveStep('scan')}>Review scan</Button><Button disabled={!backendMatch} onClick={() => void transitionTo('tailoring')}>Continue</Button></> : activeStep === 'tailor' ? <><Button variant="secondary" onClick={() => void openDashboard('documents')}>Review details</Button><Button onClick={() => { void transitionTo('reviewing').then(() => transitionTo('ready_to_fill')); }}>Approve set</Button></> : activeStep === 'fill' ? <><Button variant="secondary">Rescan fields</Button><Button disabled={!fillPlan.entries.some((entry) => entry.selected)} onClick={() => void simulateFill()}>Fill {fillPlan.entries.filter((entry) => entry.selected).length} approved</Button></> : <><Button variant="secondary" onClick={() => setActiveStep('fill')}>Back to fields</Button><Button onClick={() => void markReady()}>Mark as ready</Button></>}
@@ -91,15 +93,17 @@ export default function App() {
 }
 
 function ProfileStage({ active }: { active: ReturnType<typeof useActiveBackendProfile> }) {
-  if (active.state.status === 'loading') return <ProfileRequired title="Checking profile" message="Loading your active backend profile before unlocking the job workflow." onSetup={() => void openDashboard('profile')} />;
-  if (active.state.status === 'missing') return <ProfileRequired message="Upload a resume, verify its extracted facts, and complete the source comparison to unlock Scan." onSetup={() => void openDashboard('profile')} />;
-  if (active.state.status === 'error') return <ProfileRequired title="Profile unavailable" message={active.state.message} onSetup={() => void openDashboard('profile')} onRetry={() => void active.refetch()} />;
-  const profile = active.state.profile;
-  if (!active.state.scanUnlocked) {
-    const message = profile.facts.some((fact) => !fact.verified)
-      ? 'Verify every extracted fact in the Dashboard before analyzing a job.'
-      : 'Mark the source comparison complete in the Dashboard to unlock Scan.';
-    return <ProfileRequired title="Complete your profile" message={message} onSetup={() => void openDashboard('profile')} />;
-  }
-  return <ProfileRequired title="Profile complete" message={`${profile.display_name} is ready. You can continue to Scan.`} onSetup={() => void openDashboard('profile')} />;
+  const profile = active.state.status === 'available' ? active.state.profile : null;
+  const guidance = !profile
+    ? 'Select a profile to continue.'
+    : active.state.scanUnlocked
+      ? `${profile.display_name} is ready. Continue to Scan when you are ready.`
+      : profile.facts.some((fact) => !fact.verified)
+        ? 'This profile needs fact verification before Scan can be unlocked.'
+        : 'Complete the source comparison before Scan can be unlocked.';
+  return <div className="step-stack profile-selection-stage">
+    <div><p className="eyebrow">Candidate profile</p><h2>Select the profile for this job</h2><p>{guidance}</p></div>
+    <SidebarProfileSelector activeProfileId={active.profileId} />
+    {active.state.status === 'error' ? <p className="form-error" role="alert">{active.state.message}</p> : null}
+  </div>;
 }
