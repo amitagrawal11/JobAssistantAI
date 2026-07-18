@@ -29,8 +29,8 @@ Domain services
  ├── ProfileService
  ├── DocumentService
  ├── JobAnalysisService
- ├── ScoringService
- ├── TailoringService
+ ├── ScoringService + agent pipeline
+ ├── TailoringService + critic agent
  ├── ApplicationService
  └── OperationService
       │
@@ -62,6 +62,15 @@ Docling is initialized once per backend process. Playwright uses the same saniti
 ## AI providers and model settings
 
 One `AIProvider` interface supports both OpenAI and Ollama. Both providers receive the same minimum required domain inputs and must return identical Pydantic-validated output contracts.
+
+The provider-neutral agent runtime exposes named, versioned roles rather than one monolithic prompt:
+
+- `JobAnalystAgent`: extracts requirements, hard gates, and job evidence.
+- `CandidateEvidenceAgent`: maps verified candidate facts and classifies matched, partial, missing, or unknown.
+- `TailoringAgent`: proposes evidence-backed resume changes, cover letters, and non-sensitive answers.
+- `CriticAgent`: reviews relevance, semantic drift, and unsupported claims before user presentation.
+
+OpenAI and Ollama execute the same role contracts with the selected model. Each run records agent role, provider, model, prompt version, input schema version, and output schema version.
 
 Configuration includes:
 
@@ -130,27 +139,32 @@ Pasted/edited job
       ↓
 Sanitize and delimit untrusted content
       ↓
-Evidence-bearing requirement extraction
-      ├── deterministic rules
-      └── selected AI provider for normalization assistance
+JobAnalystAgent
+      └── requirements, hard gates, and job evidence
       ↓
-Deterministic scoring against verified facts
+CandidateEvidenceAgent
+      └── verified fact mappings and matched/partial/missing/unknown classifications
+      ↓
+Deterministic score aggregator
+      └── fixed weights, caps, and scoringVersion
       ↓
 Score components, hard gates, gaps, and evidence
 ```
 
-The selected provider may normalize requirements but cannot choose the final score. Scoring uses the specification’s fixed weights and records `scoringVersion`. Missing and unknown remain distinct. Every contribution links to job evidence and verified candidate evidence or an explicit gap.
+Agents perform the nuanced semantic analysis, but they cannot directly choose the final numerical score. The deterministic aggregator applies the specification’s fixed weights to schema-validated classifications. Missing and unknown remain distinct. Every contribution links to job evidence and verified candidate evidence or an explicit gap. Persisted results include the agent and scoring provenance needed to reproduce and explain the outcome.
 
 ## Truth-constrained tailoring and rendering
 
 ```text
 Requirement + relevant verified facts
       ↓
-Selected AI provider proposes structured changes
+TailoringAgent proposes structured changes
       ↓
 Pydantic schema validation
       ↓
-sourceFactId and unsupported-claim validation
+CriticAgent reviews relevance, drift, and unsupported claims
+      ↓
+sourceFactId and deterministic truth validation
       ↓
 Before / after / reason / evidence review
       ↓
@@ -216,7 +230,9 @@ The locked POC prohibition on formal unit/E2E suites remains. Phase 2 uses execu
 - Fictional resume upload and Docling provenance inspection.
 - Pasted-job API journey.
 - Deterministic scoring repeatability.
+- Agent-role schema and provenance validation.
 - Unsupported-claim rejection for both provider adapters.
+- Critic-agent rejection followed by deterministic truth validation.
 - Conditional OpenAI/Ollama connection checks.
 - Source-preview and tailored PDF rendering comparison.
 - Extension typecheck/build and backend-unavailable recovery.

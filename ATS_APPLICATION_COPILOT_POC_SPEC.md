@@ -59,6 +59,7 @@ These decisions must not be changed by an implementation agent unless the produc
 22. AI output never manipulates the page directly. Browser filling executes only a validated, user-approved fill plan through an ATS adapter.
 23. Job-page content is untrusted input. Sanitize and delimit it before AI use and prevent instructions embedded in a job page from changing system behavior.
 24. After PDF/DOCX parsing, profile verification must show the rendered uploaded resume as paginated A4 source pages alongside extracted facts. Users must be able to compare extraction with the source before facts become verified; incomplete review receives a clear nudge.
+25. Requirement analysis, candidate-evidence classification, and tailoring use named AI agent roles. A deterministic aggregator still owns the final numerical score, and deterministic truth validators remain authoritative over agent output.
 
 ---
 
@@ -1661,6 +1662,14 @@ Rules:
 - All scoring results include `scoringVersion`.
 - The AI provider may normalize requirements but cannot directly set the final score.
 
+Agentic scoring flow:
+
+1. `JobAnalystAgent` extracts requirements, hard gates, and job-text evidence.
+2. `CandidateEvidenceAgent` maps verified facts and classifies each item as matched, partial, missing, or unknown.
+3. The deterministic scoring module validates those structured classifications and applies fixed weights to produce the final number.
+
+Each agent run records agent role, provider, model, prompt version, and schema versions. Agent classifications without valid job evidence and verified candidate evidence, or an explicit gap, are rejected before aggregation.
+
 Expose the score as explainable dimensions rather than a single opaque ATS prediction:
 
 - Required and preferred skill coverage.
@@ -1687,6 +1696,13 @@ Implement:
 
 1. `OpenAIProvider`, using backend-only credentials and a server-side model allowlist.
 2. `OllamaProvider`, using a configurable local base URL and configured/installed models.
+
+Both providers implement the same named agent roles:
+
+- `JobAnalystAgent`.
+- `CandidateEvidenceAgent`.
+- `TailoringAgent`.
+- `CriticAgent`.
 
 Dashboard Settings lets the user select an available provider and model, test the connection, and review a privacy-routing notice. Provider/model changes affect new operations only. Every provider-assisted artifact records provider, model, prompt version, and schema version. Provider failure never silently falls back to another provider.
 
@@ -1715,6 +1731,8 @@ Generate:
 - A change classification: `REPHRASED`, `REORDERED`, `EMPHASIZED`, `REMOVED`, or `NEW_CLAIM`.
 
 The model may rephrase, reorder, emphasize, or omit verified content. It may not invent employers, dates, skills, degrees, certifications, responsibilities, metrics, or outcomes. Reject `NEW_CLAIM` unless a verified fact directly supports it and it is reclassified accordingly. Do not automatically apply changes. The user reviews a before/after diff, evidence, and reason, then accepts or rejects each material change in the extension.
+
+Before deterministic validation and user presentation, `CriticAgent` reviews each tailoring proposal for relevance, semantic drift, and unsupported claims. Critic approval does not override schema, `sourceFactIds`, classification, or truth validators.
 
 ### 19.8 A4 preview and PDF
 
@@ -1846,6 +1864,7 @@ Also verify:
 - Backend failure produces a recoverable UI state.
 - A refresh does not lose a completed profile or tracked application.
 - Provider/model provenance is recorded on AI-assisted artifacts.
+- Named scoring/tailoring agent roles and prompt/schema versions are recorded on their outputs.
 - Selecting an unavailable provider returns a recoverable error without silent fallback.
 - Pasted job content containing instruction-like text cannot alter system policy, expose secrets, switch providers, or bypass truth/review constraints.
 
