@@ -8,7 +8,7 @@ from app.models.common import ApiModel
 
 
 ProviderId = Literal["ollama", "openai"]
-AgentRole = Literal["job_analyst", "candidate_evidence", "tailoring", "critic"]
+AgentRole = Literal["profile_extractor", "job_analyst", "candidate_evidence", "tailoring", "critic"]
 
 
 class AgentRequest(ApiModel):

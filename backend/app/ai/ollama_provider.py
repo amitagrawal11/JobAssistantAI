@@ -86,7 +86,8 @@ class OllamaProvider:
             think=False,
             options={
                 "temperature": 0,
-                "num_predict": 32 if request.prompt_version == "connection-v1" else 2048,
+                "num_ctx": 8192 if request.role == "profile_extractor" else 4096,
+                "num_predict": 32 if request.prompt_version == "connection-v1" else (4096 if request.role == "profile_extractor" else 2048),
             },
         )
         output = output_type.model_validate_json(response.message.content)

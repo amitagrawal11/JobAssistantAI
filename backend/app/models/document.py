@@ -20,3 +20,9 @@ class DocumentParseResponse(ApiModel):
     parse_run_id: str
     document_id: str
     status: Literal["succeeded"]
+
+
+class DocumentReprocessResponse(ApiModel):
+    document_id: str
+    operation_id: str
+    status: Literal["pending"]

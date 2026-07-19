@@ -50,7 +50,7 @@ export default function App() {
       const savedJob = stored.activeJobAnalysis as JobAnalysis | undefined;
       const savedMatch = stored.activeBackendMatch as BackendMatch | undefined;
       if (savedJob?.profile_id === profileId) setBackendJob(savedJob);
-      if (savedMatch?.profile_id === profileId) setBackendMatch(savedMatch);
+      if (savedMatch?.profile_id === profileId && savedMatch.job_id === savedJob?.job_id) setBackendMatch(savedMatch);
     });
   }, [activeProfile.profileId]);
   useEffect(() => { if (!profileReady) setActiveStep('profile'); }, [profileReady]);
@@ -61,7 +61,7 @@ export default function App() {
   const analyzed = (analysis: JobAnalysis) => {
     setBackendJob(analysis);
     setBackendMatch(null);
-    void browser.storage.local.set({ activeJobAnalysis: analysis });
+    void browser.storage.local.set({ activeJobAnalysis: analysis }).then(() => browser.storage.local.remove('activeBackendMatch'));
     setActiveStep('match');
   };
   const scored = (match: BackendMatch) => {

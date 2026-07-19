@@ -11,7 +11,7 @@ import httpx
 from sqlalchemy import select
 
 from app.config import get_settings
-from app.db.entities import Operation, OperationStatus, ParseRun, ProfileFact
+from app.db.entities import Operation, OperationStatus, ParseRun, Profile, ProfileFact
 from app.db.session import get_session_factory
 from app.storage.filesystem import FilesystemStorage
 from smoke_cleanup import register_profile
@@ -35,7 +35,12 @@ def create_profile(client: httpx.Client) -> str:
         json={"display_name": "Jordan Lee", "email": "jordan@example.test"},
     )
     response.raise_for_status()
-    return register_profile(response.json()["id"])
+    profile_id = register_profile(response.json()["id"])
+    with get_session_factory()() as session, session.begin():
+        profile = session.get(Profile, uuid.UUID(profile_id))
+        assert profile is not None
+        profile.ai_preferences = {"provider": "disabled", "model": "disabled"}
+    return profile_id
 
 
 def upload(
@@ -188,6 +193,13 @@ def main() -> None:
             and region["reason"] == "DOCX_SOURCE_LAYOUT_APPROXIMATED"
             for region in docx_preview["fact_regions"]
         )
+
+        reprocess_response = client.post(
+            f"/documents/{pdf_upload['document_id']}/reprocess",
+            headers=HEADERS,
+        )
+        reprocess_response.raise_for_status()
+        assert reprocess_response.json()["status"] == "pending"
 
     print("Validated Docling parsing and neutral provenance")
 

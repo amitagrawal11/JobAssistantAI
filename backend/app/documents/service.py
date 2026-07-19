@@ -9,7 +9,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.db.entities import (
     Operation,
     OperationStatus,
@@ -22,9 +22,11 @@ from app.db.entities import (
 )
 from app.documents.validation import validate_document
 from app.documents.normalizer import normalize_candidate_facts
+from app.documents.ai_extractor import extract_candidate_facts
+from app.documents.profile_extraction_prompt import PROFILE_EXTRACTION_PROMPT_VERSION
 from app.documents.parser import DocumentParser
 from app.errors import DomainError
-from app.models.document import DocumentUploadResponse
+from app.models.document import DocumentReprocessResponse, DocumentUploadResponse
 from app.storage.protocol import ObjectStorage
 from app.operations.service import OperationService
 
@@ -103,6 +105,21 @@ class DocumentService:
             status="pending",
         )
 
+    def reprocess(self, document_id: uuid.UUID) -> DocumentReprocessResponse:
+        document = self.session.get(SourceDocument, document_id)
+        if document is None:
+            raise DomainError(status_code=404, code="SOURCE_DOCUMENT_NOT_FOUND", message="The requested source document was not found.")
+        operation = Operation(
+            profile_id=document.profile_id,
+            operation_type="parse_document",
+            status=OperationStatus.pending,
+            progress=0,
+            payload={"source_document_id": str(document.id)},
+        )
+        self.session.add(operation)
+        self.session.flush()
+        return DocumentReprocessResponse(document_id=str(document.id), operation_id=str(operation.id), status="pending")
+
 
 class DocumentProcessingService:
     def __init__(
@@ -145,7 +162,37 @@ class DocumentProcessingService:
         document.status = RecordStatus.processing
         self.session.flush()
         result = self._parse_stored_document(document)
-        facts = normalize_candidate_facts(result.parsed_document)
+        profile = self.session.get(Profile, document.profile_id)
+        if profile is None:
+            raise RuntimeError("Source document references a missing profile")
+        provider_id = profile.ai_preferences.get("provider")
+        model = profile.ai_preferences.get("model")
+        extraction_metadata: dict[str, str] = {"method": "deterministic"}
+        if not provider_id or not model:
+            settings = get_settings()
+            provider_id = settings.ai_provider
+            configured_models = settings.ollama_models if provider_id == "ollama" else settings.openai_models
+            model = next((item.strip() for item in configured_models.split(",") if item.strip()), None)
+            if model:
+                profile.ai_preferences = {"provider": provider_id, "model": model}
+        if provider_id in {"ollama", "openai"} and model:
+            try:
+                facts = extract_candidate_facts(result.parsed_document, provider_id, model)
+                extraction_metadata = {
+                    "method": "ai_agent",
+                    "provider": provider_id,
+                    "model": model,
+                    "prompt_version": PROFILE_EXTRACTION_PROMPT_VERSION,
+                }
+            except Exception as error:
+                raise DomainError(
+                    status_code=503,
+                    code="PROFILE_EXTRACTION_FAILED",
+                    message="Docling parsed the resume, but the selected AI provider could not extract profile facts. Retry after checking the provider and model.",
+                    retryable=True,
+                ) from error
+        else:
+            facts = normalize_candidate_facts(result.parsed_document)
 
         parse_run_id = uuid.uuid4()
         lossless_key = (
@@ -218,6 +265,7 @@ class DocumentProcessingService:
                         "parser": result.parsed_document.parser,
                         "parser_version": result.parsed_document.parser_version,
                         "element_ids": fact.element_ids,
+                        "extraction": extraction_metadata,
                     },
                     page_number=fact.page_number,
                     bounding_box=fact.bounding_box or [],
@@ -227,9 +275,6 @@ class DocumentProcessingService:
                 )
             )
 
-        profile = self.session.get(Profile, document.profile_id)
-        if profile is None:
-            raise RuntimeError("Source document references a missing profile")
         profile.readiness = ProfileReadiness.needs_review
         profile.source_comparison_resolved = False
         profile.status = RecordStatus.ready

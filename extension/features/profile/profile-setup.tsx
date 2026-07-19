@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { CheckCircle2, FileUp, LoaderCircle } from 'lucide-react';
 import { createProfile } from '../../api/profiles';
-import { executeParse, uploadDocument } from '../../api/documents';
+import { executeParse, reprocessDocument, uploadDocument } from '../../api/documents';
 import { BackendError } from '../../api/client';
 
 export type ActiveProfileSource = {
@@ -56,6 +56,22 @@ export function ProfileSetup({
     }
   }
 
+  async function extractAgain() {
+    if (!activeSource) return;
+    setError('');
+    setStage('parsing');
+    try {
+      const operation = await reprocessDocument(activeSource.documentId);
+      await executeParse(operation.operation_id);
+      await browser.storage.local.set({ activeProfileRevision: Date.now() });
+      setStage('complete');
+      onBackendReady(activeSource);
+    } catch (caught) {
+      setStage('idle');
+      setError(caught instanceof BackendError ? caught.message : 'The resume could not be extracted again.');
+    }
+  }
+
   const busy = stage === 'uploading' || stage === 'parsing';
   return (
     <section className="profile-setup">
@@ -63,8 +79,8 @@ export function ProfileSetup({
         <p className="eyebrow">Source resume</p>
         <h2>Upload and compare</h2>
         <p className="setup-copy">
-          We extract candidate facts locally, then place them beside the original
-          document for review.
+          Docling reads the document, then your selected AI model extracts evidence-grounded
+          candidate facts for review.
         </p>
       </div>
       <label className={`upload-zone${busy ? ' busy' : ''}`}>
@@ -74,7 +90,7 @@ export function ProfileSetup({
         <input type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled={busy} onChange={(event) => void handleFile(event)} />
       </label>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
-      {activeSource ? <small className="active-source-note">An extracted source is ready for comparison below.</small> : null}
+      {activeSource ? <div className="active-source-note"><small>An extracted source is ready for comparison below.</small><button type="button" className="text-button" disabled={busy} onClick={() => void extractAgain()}>Extract again with AI</button></div> : null}
     </section>
   );
 }

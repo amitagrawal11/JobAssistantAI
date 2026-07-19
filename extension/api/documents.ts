@@ -1,5 +1,6 @@
 import {
   documentParseSchema,
+  documentReprocessSchema,
   documentUploadSchema,
   sourcePreviewSchema,
   type DocumentParse,
@@ -30,8 +31,12 @@ export function executeParse(operationId: string): Promise<DocumentParse> {
     `/operations/${operationId}/execute`,
     documentParseSchema,
     { method: 'POST' },
-    120_000,
+    600_000,
   );
+}
+
+export function reprocessDocument(documentId: string) {
+  return apiRequest(`/documents/${documentId}/reprocess`, documentReprocessSchema, { method: 'POST' }, 30_000);
 }
 
 export function getSourcePreview(documentId: string): Promise<SourcePreview> {

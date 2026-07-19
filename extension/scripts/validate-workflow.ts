@@ -25,8 +25,8 @@ if (illegal.ok || store.getState().workflowStatus !== 'scored') {
 if (isScanReadOnly(null)) {
   throw new Error('Fresh Scan was made read-only by legacy workflow state');
 }
-if (!isScanReadOnly({ job_id: 'saved', description: 'Saved job content' })) {
-  throw new Error('Completed Scan remained editable');
+if (isScanReadOnly({ job_id: 'saved', description: 'Saved job content' })) {
+  throw new Error('A previous analysis made Scan read-only');
 }
 if (backendMaxUnlocked({ profileReady: true, hasJob: false, hasMatch: false, legacyIndex: 5 }) !== 1) {
   throw new Error('Legacy workflow unlocked Match before backend job analysis');

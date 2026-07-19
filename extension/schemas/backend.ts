@@ -76,6 +76,12 @@ export const documentParseSchema = z.object({
   status: z.literal('succeeded'),
 });
 
+export const documentReprocessSchema = z.object({
+  operation_id: z.string().uuid(),
+  document_id: z.string().uuid(),
+  status: z.literal('pending'),
+});
+
 export const sourcePreviewSchema = z.object({
   document_id: z.string().uuid(),
   filename: z.string(),

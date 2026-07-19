@@ -1,10 +1,6 @@
 export function isScanReadOnly(savedJob: unknown): boolean {
-  return Boolean(
-    savedJob
-    && typeof savedJob === 'object'
-    && 'description' in savedJob
-    && typeof savedJob.description === 'string',
-  );
+  void savedJob;
+  return false;
 }
 
 export function backendMaxUnlocked({
