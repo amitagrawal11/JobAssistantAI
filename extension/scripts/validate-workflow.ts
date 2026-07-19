@@ -5,6 +5,7 @@ import {
   isScanReadOnly,
 } from '../features/application/backend-workflow';
 import { canAnalyzeDescription } from '../features/job-analysis/scan-contract';
+import { parsedTextMatches } from '../features/profile/parsed-source-contract';
 
 const repository = new MemorySessionRepository();
 const store = createApplicationStore(repository);
@@ -44,6 +45,12 @@ if (canAnalyzeDescription('x'.repeat(19))) {
 }
 if (!canAnalyzeDescription(`  ${'x'.repeat(20)}  `)) {
   throw new Error('Valid trimmed job description was rejected');
+}
+if (!parsedTextMatches('React Architecture', 'react')) {
+  throw new Error('Parsed source search is not case-insensitive');
+}
+if (parsedTextMatches('React Architecture', 'python')) {
+  throw new Error('Parsed source search accepted absent text');
 }
 
 console.log('Validated Phase 1 workflow transitions');

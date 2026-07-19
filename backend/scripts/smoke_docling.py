@@ -155,6 +155,10 @@ def main() -> None:
         pdf_preview_response.raise_for_status()
         pdf_preview = pdf_preview_response.json()
         assert pdf_preview["media_kind"] == "pdf"
+        assert pdf_preview["parser"] == "docling"
+        assert pdf_preview["parser_version"]
+        assert pdf_preview["element_count"] > 0
+        assert any(page["parsed_text"].strip() for page in pdf_preview["pages"])
         assert pdf_preview["pages"][0]["image_data_url"].startswith(
             "data:image/png;base64,"
         )
@@ -173,6 +177,9 @@ def main() -> None:
         docx_preview_response.raise_for_status()
         docx_preview = docx_preview_response.json()
         assert docx_preview["media_kind"] == "docx"
+        assert docx_preview["parser"] == "docling"
+        assert docx_preview["element_count"] > 0
+        assert any(page["parsed_text"].strip() for page in docx_preview["pages"])
         assert "<script" not in docx_preview["pages"][0]["html"].lower()
         assert 'src="http' not in docx_preview["pages"][0]["html"].lower()
         assert 'href="http' not in docx_preview["pages"][0]["html"].lower()

@@ -85,10 +85,14 @@ export const sourcePreviewSchema = z.object({
       number: z.number().int().positive(),
       width: z.number().positive(),
       height: z.number().positive(),
+      parsed_text: z.string(),
       image_data_url: z.string().nullable(),
       html: z.string().nullable(),
     }),
   ),
+  parser: z.string(),
+  parser_version: z.string(),
+  element_count: z.number().int().nonnegative(),
   fact_regions: z.array(
     z.object({
       fact_id: z.string().uuid(),

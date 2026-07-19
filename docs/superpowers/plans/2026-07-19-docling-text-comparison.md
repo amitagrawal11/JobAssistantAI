@@ -17,10 +17,10 @@
 - Modify: `backend/app/documents/source_preview.py`
 - Test: `backend/scripts/smoke_docling.py`
 
-- [ ] Add failing smoke assertions for parser metadata, element count, and page text.
-- [ ] Run the Docling smoke test and confirm the response-contract failure.
-- [ ] Add metadata and reading-order page text to the preview response.
-- [ ] Re-run the smoke test and confirm it passes.
+- [x] Add failing smoke assertions for parser metadata, element count, and page text.
+- [x] Run the Docling smoke test and confirm the response-contract failure.
+- [x] Add metadata and reading-order page text to the preview response.
+- [x] Re-run the smoke test and confirm it passes.
 
 ### Task 2: Parsed-text profile view
 
@@ -31,13 +31,13 @@
 - Modify: `extension/styles/globals.css`
 - Modify: `extension/scripts/validate-workflow.ts`
 
-- [ ] Add failing workflow assertions for the parsed-text contract.
-- [ ] Run workflow validation and confirm the failure.
-- [ ] Add the schema, searchable text panel, split layout, and shared navigation.
-- [ ] Run workflow validation, TypeScript checking, and the production build.
+- [x] Add failing workflow assertions for the parsed-text contract.
+- [x] Run workflow validation and confirm the failure.
+- [x] Add the schema, searchable text panel, split layout, and shared navigation.
+- [x] Run workflow validation, TypeScript checking, and the production build.
 
 ### Task 3: Final verification and commit
 
-- [ ] Run backend contract smoke tests.
-- [ ] Run all extension validations and the production build.
-- [ ] Run `git diff --check` and commit the feature.
+- [x] Run backend contract smoke tests.
+- [x] Run all extension validations and the production build.
+- [x] Run `git diff --check` and commit the feature.

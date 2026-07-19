@@ -66,12 +66,13 @@ class SourcePreviewService:
             )
         )
         if document.media_type == "application/pdf":
-            return self._pdf_preview(document, neutral, facts)
-        return self._docx_preview(document, neutral, facts)
+            return self._pdf_preview(document, parse_run, neutral, facts)
+        return self._docx_preview(document, parse_run, neutral, facts)
 
     def _pdf_preview(
         self,
         document: SourceDocument,
+        parse_run: ParseRun,
         neutral: dict[str, Any],
         facts: list[ProfileFact],
     ) -> SourcePreviewResponse:
@@ -79,6 +80,7 @@ class SourcePreviewService:
             pdf = pdfium.PdfDocument(source.read())
         pages: list[SourcePreviewPage] = []
         page_sizes: dict[int, tuple[float, float]] = {}
+        page_text = _text_by_source_page(neutral["elements"])
         try:
             for index in range(len(pdf)):
                 page = pdf[index]
@@ -93,6 +95,7 @@ class SourcePreviewService:
                         number=page_number,
                         width=float(width),
                         height=float(height),
+                        parsed_text=page_text.get(page_number, ""),
                         image_data_url=(
                             "data:image/png;base64,"
                             + base64.b64encode(output.getvalue()).decode("ascii")
@@ -110,6 +113,9 @@ class SourcePreviewService:
             document_id=str(document.id),
             filename=document.filename,
             media_kind="pdf",
+            parser=parse_run.parser,
+            parser_version=parse_run.parser_version,
+            element_count=len(neutral["elements"]),
             pages=pages,
             fact_regions=regions,
         )
@@ -117,6 +123,7 @@ class SourcePreviewService:
     def _docx_preview(
         self,
         document: SourceDocument,
+        parse_run: ParseRun,
         neutral: dict[str, Any],
         facts: list[ProfileFact],
     ) -> SourcePreviewResponse:
@@ -132,6 +139,7 @@ class SourcePreviewService:
                 number=page_number,
                 width=A4_WIDTH_POINTS,
                 height=A4_HEIGHT_POINTS,
+                parsed_text=_readable_text(elements),
                 html=template.render(elements=elements),
             )
             for page_number, elements in enumerate(chunks, start=1)
@@ -149,6 +157,9 @@ class SourcePreviewService:
             document_id=str(document.id),
             filename=document.filename,
             media_kind="docx",
+            parser=parse_run.parser,
+            parser_version=parse_run.parser_version,
+            element_count=len(neutral["elements"]),
             pages=pages,
             fact_regions=regions,
         )
@@ -217,6 +228,24 @@ def _paginate_elements(elements: list[dict[str, Any]]) -> Iterable[list[dict[str
         characters += length
     if page:
         yield page
+
+
+def _text_by_source_page(elements: list[dict[str, Any]]) -> dict[int, str]:
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for element in elements:
+        page_number = element.get("page_number")
+        page = int(page_number) if isinstance(page_number, (int, float)) else 1
+        grouped.setdefault(page, []).append(element)
+    return {page: _readable_text(items) for page, items in grouped.items()}
+
+
+def _readable_text(elements: list[dict[str, Any]]) -> str:
+    ordered = sorted(elements, key=lambda item: int(item.get("reading_order") or 0))
+    return "\n\n".join(
+        text
+        for element in ordered
+        if (text := str(element.get("text") or "").strip())
+    )
 
 
 def _fact_page(fact: ProfileFact, element_pages: dict[str, int]) -> int:

@@ -6,6 +6,7 @@ import { getSourcePreview, sourcePreviewQueryKey } from '../../api/documents';
 import type { BackendProfile } from '../../schemas/backend';
 import { Button } from '../../components/ui/button';
 import { FactReview } from './fact-review';
+import { ParsedSourceText } from './parsed-source-text';
 
 type Fact = BackendProfile['facts'][number];
 
@@ -69,7 +70,8 @@ export function SourceFactVerification({ profileId, documentId }: { profileId: s
   return <>
     {!profile.source_comparison_resolved ? <aside className="comparison-nudge"><AlertTriangle /><div><strong>Compare the extraction with the source</strong><span>Confirm that names, dates, employers, and skills match the uploaded resume before using them.</span></div><Button size="sm" onClick={resolveComparison} disabled={mutation.isPending || profile.facts.length === 0}>Comparison complete</Button></aside> : null}
     {mutation.isError ? <p className="form-error" role="alert">{mutation.error.message}</p> : null}
-    <div className="source-verification-layout">
+    <div className="source-comparison-layout">
+      <ParsedSourceText preview={preview} pageNumber={page.number} />
       <section className="source-column" aria-label="Original resume">
         <div className="source-toolbar"><div><p className="eyebrow">Original source</p><strong>{preview.filename}</strong></div><div className="page-controls"><Button size="icon" variant="ghost" aria-label="Previous source page" disabled={pageNumber <= 1} onClick={() => setPageNumber((current) => current - 1)}><ChevronLeft /></Button><span>Page {page.number} of {preview.pages.length}</span><Button size="icon" variant="ghost" aria-label="Next source page" disabled={pageNumber >= preview.pages.length} onClick={() => setPageNumber((current) => current + 1)}><ChevronRight /></Button></div></div>
         <div className="source-canvas">
@@ -80,7 +82,7 @@ export function SourceFactVerification({ profileId, documentId }: { profileId: s
           {selectedFact && !selectedRegion?.available ? <p className="provenance-note">Exact highlighting is unavailable for this DOCX preview. Page {selectedRegion?.page_number ?? selectedFact.source.page ?? 1} contains the extracted source; compare the visible text before verifying.</p> : null}
         </div>
       </section>
-      <FactReview backendProfile={profile} selectedFactId={selectedFact?.id} pendingFactId={pendingFactId} onSelectFact={selectFact} onSaveFact={(fact, value) => mutateFact(fact, value)} onVerifyFact={(fact) => mutateFact(fact)} />
     </div>
+    <FactReview backendProfile={profile} selectedFactId={selectedFact?.id} pendingFactId={pendingFactId} onSelectFact={selectFact} onSaveFact={(fact, value) => mutateFact(fact, value)} onVerifyFact={(fact) => mutateFact(fact)} />
   </>;
 }

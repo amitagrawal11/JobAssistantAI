@@ -9,6 +9,7 @@ class SourcePreviewPage(ApiModel):
     number: int
     width: float
     height: float
+    parsed_text: str
     image_data_url: str | None = None
     html: str | None = None
 
@@ -25,5 +26,8 @@ class SourcePreviewResponse(ApiModel):
     document_id: str
     filename: str
     media_kind: Literal["pdf", "docx"]
+    parser: str
+    parser_version: str
+    element_count: int
     pages: list[SourcePreviewPage]
     fact_regions: list[FactRegion]
