@@ -9,14 +9,21 @@ cards.
 ## Filter interaction
 
 - Replace the Application Method dropdown with a two-segment toggle displayed
-  in the advanced filter row.
+  immediately before the Sort control in the jobs action row.
 - Label the existing `company_site` value as **Apply**.
 - Label `quick_apply` as **Quick Apply**.
 - The segments are mutually exclusive because selecting both methods is
   equivalent to applying no method filter.
 - Clicking an unselected segment selects it and clears the other segment.
 - Clicking the selected segment clears the application-method filter.
-- Show each facet count inside its segment when the API supplies a count.
+- Do not show facet counts inside the toggle.
+- Keep the toggle visible whether the filter panel is expanded or collapsed.
+- Let the toggle and Sort control wrap together on narrower screens.
+- Animate a shared selection indicator between the two segments over 200ms
+  using an ease-out transition.
+- When the selected segment is cleared, fade the indicator out.
+- Keep both labels stationary while the indicator moves.
+- Disable the movement and fade transitions when reduced motion is requested.
 - The control must expose pressed state and an Application Method group label
   for assistive technology.
 - The URL and API contract continue using `company_site` and `quick_apply`;
@@ -41,10 +48,11 @@ dropdowns.
 
 ## Testing
 
-- Component tests verify that Application Method renders as two toggle buttons
-  rather than a dropdown.
+- Component tests verify that Application Method is absent from the filter panel
+  and renders beside Sort as two toggle buttons.
 - Tests verify select, replace, and clear interactions.
-- Tests verify that API facet counts appear in the segments.
+- Tests verify that facet counts do not appear in the segments.
+- Tests verify the sliding indicator and reduced-motion classes.
 - The job-card source contract test verifies that both available actions use
   the outlined treatment and that no filled-primary Quick Apply style remains.
 - Run the full frontend test suite, production build, and lint after the focused
