@@ -27,6 +27,7 @@ def _best_matching_element(elements: dict, value_tokens: set[str]) -> str | None
 from app.ai.registry import ProviderRegistry
 from app.config import get_settings
 from app.documents.hybrid_extractor import COMBINED_LLM_PROMPT, SECTION_LLM_PROMPTS, build_combined_input, plan_extraction
+from app.documents.normalizer import normalize_candidate_facts
 from app.documents.profile_extraction_prompt import PROFILE_EXTRACTION_PROMPT, PROFILE_EXTRACTION_PROMPT_VERSION
 from app.models.ai import AgentRequest
 from app.models.parsed_document import NormalizedFact, ParsedDocument
@@ -44,14 +45,15 @@ def extract_candidate_facts(document: ParsedDocument, provider_id: str, model: s
     """
     provider = ProviderRegistry(get_settings()).get(provider_id)
     plan = plan_extraction(document)
-    extracted: list[ExtractedProfileFact] = list(plan.deterministic_facts)
+    deterministic = list(plan.deterministic_facts)
+    enhanced: list[ExtractedProfileFact] = []
 
     def _got(category: str) -> bool:
         # A section counts as extracted whether the model set the category or only
         # the keyed prefix (experience_1, education_2, project_1, …).
         return any(
             (f.category == category or f.key.lower().startswith(category)) and f.value.strip()
-            for f in extracted
+            for f in enhanced
         )
 
     # One combined LLM call over just the structured sections (contact/summary/
@@ -59,7 +61,7 @@ def extract_candidate_facts(document: ParsedDocument, provider_id: str, model: s
     # a call per section while keeping the input focused enough not to drop one.
     if plan.llm_sections:
         combined = build_combined_input(plan.llm_sections)
-        extracted.extend(_run_section_llm(provider, provider_id, model, "combined", COMBINED_LLM_PROMPT, combined))
+        enhanced.extend(_run_section_llm(provider, provider_id, model, "combined", COMBINED_LLM_PROMPT, combined))
 
     # Targeted retry: re-run only the sections the combined pass dropped (cheap,
     # since a dropped section is usually short) — keeps it fast when the model
@@ -67,13 +69,27 @@ def extract_candidate_facts(document: ParsedDocument, provider_id: str, model: s
     for category, section_text in plan.llm_sections:
         if not _got(category):
             logger.info("hybrid combined pass missed '%s'; retrying that section alone", category)
-            extracted.extend(_run_section_llm(provider, provider_id, model, category, SECTION_LLM_PROMPTS[category], section_text))
+            enhanced.extend(_run_section_llm(provider, provider_id, model, category, SECTION_LLM_PROMPTS[category], section_text))
 
-    if not _got("experience"):
-        logger.info("hybrid extraction recovered no experience; running whole-document fallback")
-        extracted.extend(_extract_whole_document(document, provider, provider_id, model))
-
+    replaced_categories = {
+        category for category, _ in plan.llm_sections if _got(category)
+    }
+    extracted = [
+        fact for fact in deterministic if fact.category not in replaced_categories
+    ]
+    extracted.extend(enhanced)
     return validate_extracted_facts(document, extracted)
+
+
+def extract_deterministic_facts(document: ParsedDocument) -> list[NormalizedFact]:
+    """Extract recognizable sections without requiring an AI runtime."""
+    candidates = plan_extraction(document).deterministic_facts
+    if not candidates:
+        return normalize_candidate_facts(document)
+    try:
+        return validate_extracted_facts(document, candidates)
+    except ValueError:
+        return normalize_candidate_facts(document)
 
 
 def _run_section_llm(provider, provider_id: str, model: str, label: str, instructions: str, text: str) -> list[ExtractedProfileFact]:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import uuid
 from pathlib import Path
 
@@ -62,8 +63,22 @@ def process(operation_id: str) -> None:
         response = client.post(
             f"/operations/{operation_id}/execute", headers=HEADERS
         )
-        response.raise_for_status()
-        assert response.json()["status"] == "succeeded"
+        if response.status_code < 400:
+            assert response.json()["status"] == "succeeded"
+            return
+        assert response.status_code == 409, response.text
+    deadline = time.monotonic() + 120
+    operation_uuid = uuid.UUID(operation_id)
+    while time.monotonic() < deadline:
+        with get_session_factory()() as session:
+            operation = session.get(Operation, operation_uuid)
+            assert operation is not None
+            if operation.status == OperationStatus.succeeded:
+                return
+            if operation.status == OperationStatus.failed:
+                raise AssertionError(f"Extraction failed: {operation.error_code}")
+        time.sleep(0.25)
+    raise AssertionError(f"Timed out waiting for operation {operation_id}")
 
 
 def main() -> None:
@@ -72,11 +87,12 @@ def main() -> None:
         pdf_upload = upload(
             client, profile_id, "jordan-lee-resume.pdf", "application/pdf"
         )
+    process(pdf_upload["operation_id"])
+
+    with httpx.Client(base_url=BASE_URL, timeout=30) as client:
         docx_upload = upload(
             client, profile_id, "jordan-lee-resume.docx", DOCX_MEDIA_TYPE
         )
-
-    process(pdf_upload["operation_id"])
     process(docx_upload["operation_id"])
 
     settings = get_settings()
@@ -98,6 +114,9 @@ def main() -> None:
             )
         )
         assert pdf_facts
+        assert pdf_runs[0].parser_metadata["extraction"]["method"] == "deterministic"
+        categories = {fact.category for fact in pdf_facts}
+        assert {"identity", "contact", "experience", "education", "skills"} <= categories
         assert all(fact.page_number is not None for fact in pdf_facts)
 
         neutral_key = pdf_runs[0].parser_metadata["neutral_storage_key"]
@@ -200,6 +219,24 @@ def main() -> None:
         )
         reprocess_response.raise_for_status()
         assert reprocess_response.json()["status"] == "pending"
+        ai_operation_id = reprocess_response.json()["operation_id"]
+
+    if os.environ.get("RUN_LIVE_EXTRACTION_AI") == "1":
+        process(ai_operation_id)
+        with get_session_factory()() as session:
+            latest_run = session.scalar(
+                select(ParseRun)
+                .where(ParseRun.source_document_id == pdf_document_id)
+                .order_by(ParseRun.created_at.desc())
+            )
+            assert latest_run is not None
+            extraction = latest_run.parser_metadata["extraction"]
+            assert extraction["method"] in {"section_ai", "deterministic_fallback"}
+            assert extraction["model"] == get_settings().resume_extraction_model
+            print(
+                "Validated optional section AI with "
+                f"{extraction['model']} ({extraction['method']})"
+            )
 
     print("Validated Docling parsing and neutral provenance")
 

@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     openai_models: str = ""
     ollama_base_url: str = "http://host.docker.internal:11434"
     ollama_models: str = ""
+    resume_extraction_model: str = "qwen2.5:1.5b"
     max_document_bytes: int = Field(
         default=5 * 1024 * 1024,
         gt=0,

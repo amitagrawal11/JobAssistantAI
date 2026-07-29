@@ -12,6 +12,18 @@ Docling, and can use a locally running Ollama model for AI-assisted features.
 - Optional: Ollama with a configured model for AI-assisted extraction and
   tailoring. The rest of the application runs without it.
 
+Resume uploads use fast, evidence-linked deterministic extraction. The optional
+“Extract again with AI” action uses the lightweight `qwen2.5:1.5b` Ollama model
+by default and falls back safely when that model is not installed:
+
+```bash
+ollama pull qwen2.5:1.5b
+```
+
+Override only the dedicated resume model with
+`RESUME_EXTRACTION_MODEL=<model-tag>`; the application will not silently choose
+a larger installed model.
+
 ## Run locally
 
 Start Docker Desktop, then run:
