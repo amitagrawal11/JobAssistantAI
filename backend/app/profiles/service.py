@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.db.entities import Profile, ProfileFact, ProfileReadiness, RecordStatus
+from app.db.entities import ParseRun, Profile, ProfileFact, ProfileReadiness, RecordStatus, SourceDocument
 from app.errors import DomainError
 from app.models.common import SourceReference
 from app.models.profile import (
     CandidateFact,
+    FactCreateRequest,
     FactVerificationRequest,
     ProfileCreate,
     ProfileResponse,
@@ -31,6 +32,10 @@ class ProfileService:
         )
         self.session.add(profile)
         self.session.flush()
+        # First profile (or when none is marked yet) becomes the default.
+        if self.session.scalar(select(Profile.id).where(Profile.is_default.is_(True))) is None:
+            profile.is_default = True
+            self.session.flush()
         return self._response(profile, [])
 
     def get(self, profile_id: uuid.UUID) -> ProfileResponse:
@@ -42,7 +47,9 @@ class ProfileService:
     def list(self) -> list[ProfileResponse]:
         profiles = list(
             self.session.scalars(
-                select(Profile).order_by(
+                select(Profile)
+                .where(Profile.status != RecordStatus.archived)
+                .order_by(
                     Profile.updated_at.desc(),
                     Profile.created_at.desc(),
                 )
@@ -104,6 +111,96 @@ class ProfileService:
         self.session.flush()
         return self._response(profile, facts)
 
+    def add_fact(self, profile_id: uuid.UUID, request: FactCreateRequest) -> ProfileResponse:
+        profile = self._get_profile(profile_id)
+        # A ProfileFact needs a parse_run + source_document (both non-null); reuse
+        # the profile's most recent parse so user-added facts satisfy the FKs.
+        parse_run = self.session.scalar(
+            select(ParseRun)
+            .join(SourceDocument, ParseRun.source_document_id == SourceDocument.id)
+            .where(SourceDocument.profile_id == profile_id)
+            .order_by(ParseRun.created_at.desc())
+        )
+        if parse_run is None:
+            raise DomainError(
+                status_code=422,
+                code="NO_PARSED_DOCUMENT",
+                message="Upload and parse a resume before adding entries.",
+            )
+        base_key = request.key.strip() or request.category.strip()
+        existing = {f.fact_key for f in self._current_facts(profile_id) if f.category == request.category.strip()}
+        key = base_key
+        suffix = 2
+        while key in existing:
+            key = f"{base_key}_{suffix}"
+            suffix += 1
+        fact = ProfileFact(
+            profile_id=profile.id,
+            parse_run_id=parse_run.id,
+            source_document_id=parse_run.source_document_id,
+            category=request.category.strip(),
+            fact_key=key,
+            fact_value=request.value.strip(),
+            confidence=None,
+            verified=False,
+            provenance={"source": "user_added"},
+            page_number=None,
+            bounding_box=[],
+            element_ids=[],
+            correction_version=0,
+            is_current=True,
+        )
+        self.session.add(fact)
+        self.session.flush()
+        facts = self._current_facts(profile.id)
+        self._refresh_readiness(profile, facts)
+        self.session.flush()
+        return self._response(profile, facts)
+
+    def set_default(self, profile_id: uuid.UUID) -> ProfileResponse:
+        profile = self._get_profile(profile_id)
+        if not profile.is_default:
+            # Clear the existing default before setting the new one so the
+            # single-default unique index is never transiently violated.
+            self.session.execute(
+                update(Profile).where(Profile.is_default.is_(True)).values(is_default=False)
+            )
+            self.session.flush()
+            profile.is_default = True
+            self.session.flush()
+        facts = self._current_facts(profile.id)
+        self._refresh_readiness(profile, facts)
+        return self._response(profile, facts)
+
+    def delete(self, profile_id: uuid.UUID) -> None:
+        # Hard-delete: every FK to profiles.id is ON DELETE CASCADE (verified in
+        # the schema) and there are no ORM relationships to intercept, so a bare
+        # DELETE removes the profile and all its documents/parse-runs/facts/
+        # matches/applications/tracked rows in one shot.
+        profile = self._get_profile(profile_id)
+        was_default = profile.is_default
+        self.session.delete(profile)
+        self.session.flush()
+        # Keep a default around: promote the most-recent remaining profile.
+        if was_default:
+            successor = self.session.scalar(
+                select(Profile)
+                .order_by(Profile.updated_at.desc(), Profile.created_at.desc())
+            )
+            if successor is not None:
+                successor.is_default = True
+                self.session.flush()
+
+    def delete_fact(self, profile_id: uuid.UUID, fact_id: uuid.UUID) -> ProfileResponse:
+        profile = self._get_profile(profile_id)
+        fact = self._get_current_fact(profile.id, fact_id)
+        fact.is_current = False
+        self.session.flush()
+        facts = self._current_facts(profile.id)
+        self._refresh_readiness(profile, facts)
+        self.session.flush()
+        return self._response(profile, facts)
+
     def _get_profile(self, profile_id: uuid.UUID) -> Profile:
         profile = self.session.get(Profile, profile_id)
         if profile is None:
@@ -153,15 +250,26 @@ class ProfileService:
         else:
             profile.readiness = ProfileReadiness.needs_review
 
-    @staticmethod
-    def _response(profile: Profile, facts: list[ProfileFact]) -> ProfileResponse:
+    def _response(self, profile: Profile, facts: list[ProfileFact]) -> ProfileResponse:
+        # The profile's current resume = the most recently uploaded source document.
+        source_filename = self.session.scalar(
+            select(SourceDocument.filename)
+            .where(SourceDocument.profile_id == profile.id)
+            .order_by(SourceDocument.created_at.desc())
+        )
         return ProfileResponse(
             id=str(profile.id),
             display_name=profile.display_name,
             email=profile.email,
             readiness=profile.readiness.value,
             source_comparison_resolved=profile.source_comparison_resolved,
+            is_default=profile.is_default,
+            source_filename=source_filename,
             ai_preferences=profile.ai_preferences,
+            contact=profile.contact,
+            application_defaults=profile.application_defaults,
+            socials=profile.socials,
+            custom_sections=profile.custom_sections,
             facts=[
                 CandidateFact(
                     id=str(fact.id),

@@ -46,39 +46,31 @@ def main() -> None:
         RequirementEvidence(
             requirement_id="req-react",
             classification=EvidenceClassification.matched,
-            source_fact_ids=["fact-react"],
-            reason="Verified React fact directly supports the requirement.",
+            reason="Resume text describes production React experience.",
             confidence=0.95,
         ),
         RequirementEvidence(
             requirement_id="req-leadership",
             classification=EvidenceClassification.partial,
-            source_fact_ids=["fact-lead"],
-            reason="Verified mentoring evidence is narrower than requested.",
+            reason="Resume mentions mentoring, narrower than requested.",
             confidence=0.75,
         ),
     ]
-    first = aggregate_match(requirements, evidence, {"fact-react", "fact-lead"})
-    second = aggregate_match(requirements, evidence, {"fact-react", "fact-lead"})
+    first = aggregate_match(requirements, evidence)
+    second = aggregate_match(requirements, evidence)
     assert json.dumps(first.model_dump(), sort_keys=True) == json.dumps(second.model_dump(), sort_keys=True)
     assert first.scoring_version == "deterministic-v1"
     assert first.score == 37.5
     assert first.hard_gate_failures == []
 
-    bad = evidence[0].model_copy(update={"source_fact_ids": ["unverified-fact"]})
-    try:
-        aggregate_match(requirements, [bad, evidence[1]], {"fact-react", "fact-lead"})
-    except ValueError as error:
-        assert "verified" in str(error)
-    else:
-        raise AssertionError("Unverified evidence was accepted")
+    # Ambiguous agent output (two evaluations for one requirement) collapses to unknown.
+    duplicate = normalize_agent_evidence(requirements, [evidence[0], evidence[0]])
+    assert [item.requirement_id for item in duplicate] == ["req-react", "req-leadership"]
+    assert all(item.classification == EvidenceClassification.unknown for item in duplicate)
 
-    normalized = normalize_agent_evidence(requirements, [evidence[0], evidence[0]], {"fact-react"})
-    assert [item.requirement_id for item in normalized] == ["req-react", "req-leadership"]
-    assert all(item.classification == EvidenceClassification.unknown for item in normalized)
-
-    hallucinated = evidence[0].model_copy(update={"source_fact_ids": ["invented"]})
-    assert normalize_agent_evidence(requirements[:1], [hallucinated], {"fact-react"})[0].classification == EvidenceClassification.unknown
+    # A requirement with no evaluation collapses to unknown.
+    missing = normalize_agent_evidence(requirements[:1], [])
+    assert missing[0].classification == EvidenceClassification.unknown
 
     with httpx.Client(base_url=BASE_URL, headers=HEADERS, timeout=240) as client:
         providers = client.get("/ai/providers").json()["providers"]

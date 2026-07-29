@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     database_url: str
     storage_root: Path
     development_bearer_token: str
-    extension_origin_regex: str = r"^chrome-extension://[a-p]{32}$"
+    extension_origin_regex: str = r"^http://localhost(:\d+)?$"
     ai_provider: str = "ollama"
     openai_api_key: str = ""
     openai_models: str = ""
@@ -25,6 +25,15 @@ class Settings(BaseSettings):
         gt=0,
         le=25 * 1024 * 1024,
     )
+    lever_companies: str = "palantir,spotify"
+    greenhouse_companies: str = (
+        "stripe,airbnb,robinhood,coinbase,discord,figma,asana,gitlab,affirm,"
+        "instacart,pinterest,reddit,lyft,cloudflare,elastic,databricks,scaleai,flexport"
+    )
+    ashby_companies: str = "ramp,notion,linear,openai,substack"
+    smartrecruiters_companies: str = "DeliveryHero,Visa"
+    ats_sync_interval_seconds: int = Field(default=6 * 60 * 60, gt=0)
+    ats_sync_on_startup: bool = True
 
     @field_validator("development_bearer_token")
     @classmethod

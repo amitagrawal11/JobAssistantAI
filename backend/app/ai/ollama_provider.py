@@ -75,6 +75,18 @@ class OllamaProvider:
     def run_structured(self, request: AgentRequest, output_type: type[OutputT]) -> AgentResult[OutputT]:
         if request.model not in self.models():
             raise ValueError("The selected Ollama model is not installed or allowlisted.")
+        if request.prompt_version == "connection-v1":
+            # Match the extraction context so a connectivity check warms the
+            # model at the same size instead of forcing a later reload.
+            num_ctx, num_predict = 8192, 32
+        elif request.prompt_version.startswith("profile-extractor"):
+            # Section-guided extraction sends focused sections (not the whole
+            # resume), so a smaller context is plenty; 4096 output tokens covers
+            # even a long experience section. Keeping num_ctx constant across all
+            # extraction calls avoids Ollama reloading the model between them.
+            num_ctx, num_predict = 8192, 4096
+        else:
+            num_ctx, num_predict = 8192, 4096
         response = self.client.chat(
             model=request.model,
             messages=[
@@ -84,10 +96,13 @@ class OllamaProvider:
             format=ollama_compatible_schema(output_type),
             stream=False,
             think=False,
+            # Keep the model resident between calls so a multi-upload session
+            # doesn't pay the ~8s cold-load on every parse.
+            keep_alive="20m",
             options={
                 "temperature": 0,
-                "num_ctx": 8192 if request.role == "profile_extractor" else 4096,
-                "num_predict": 32 if request.prompt_version == "connection-v1" else (4096 if request.role == "profile_extractor" else 2048),
+                "num_ctx": num_ctx,
+                "num_predict": num_predict,
             },
         )
         output = output_type.model_validate_json(response.message.content)

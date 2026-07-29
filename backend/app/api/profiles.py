@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_session
 from app.errors import DomainError
 from app.models.profile import (
+    FactCreateRequest,
     FactVerificationRequest,
     ProfileCreate,
     ProfileResponse,
@@ -58,6 +59,21 @@ def update_profile(
     return ProfileService(session).update(profile_id(profile_id_value), request)
 
 
+@router.post("/{profile_id_value}/default", response_model=ProfileResponse)
+def set_default_profile(
+    profile_id_value: str, session: Session = Depends(get_session)
+) -> ProfileResponse:
+    return ProfileService(session).set_default(profile_id(profile_id_value))
+
+
+@router.delete("/{profile_id_value}")
+def delete_profile(
+    profile_id_value: str, session: Session = Depends(get_session)
+) -> dict[str, bool]:
+    ProfileService(session).delete(profile_id(profile_id_value))
+    return {"deleted": True}
+
+
 @router.post("/{profile_id_value}/facts/verify", response_model=ProfileResponse)
 def verify_profile_facts(
     profile_id_value: str,
@@ -65,3 +81,21 @@ def verify_profile_facts(
     session: Session = Depends(get_session),
 ) -> ProfileResponse:
     return ProfileService(session).verify_facts(profile_id(profile_id_value), request)
+
+
+@router.post("/{profile_id_value}/facts", response_model=ProfileResponse, status_code=status.HTTP_201_CREATED)
+def add_profile_fact(
+    profile_id_value: str,
+    request: FactCreateRequest,
+    session: Session = Depends(get_session),
+) -> ProfileResponse:
+    return ProfileService(session).add_fact(profile_id(profile_id_value), request)
+
+
+@router.delete("/{profile_id_value}/facts/{fact_id_value}", response_model=ProfileResponse)
+def delete_profile_fact(
+    profile_id_value: str,
+    fact_id_value: str,
+    session: Session = Depends(get_session),
+) -> ProfileResponse:
+    return ProfileService(session).delete_fact(profile_id(profile_id_value), profile_id(fact_id_value))

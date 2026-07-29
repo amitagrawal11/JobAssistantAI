@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;letter-spacing:-.025em}
+*{box-sizing:border-box;scrollbar-width:none}
+::selection{background:oklch(0.9 calc(0.06*var(--pw-cmul,1)) var(--pw-hue,265));color:oklch(0.28 calc(0.06*var(--pw-cmul,1)) var(--pw-hue,265))}
+::-webkit-scrollbar{width:0;height:0;display:none}
+::-webkit-scrollbar-thumb{background:oklch(0.86 0.008 260);border-radius:6.2px}
+a{color:oklch(0.55 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265));text-decoration:none}
+a:hover{color:oklch(0.48 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265))}
+button{transition:transform .1s ease,filter .16s ease,box-shadow .16s ease}
+button:hover{filter:brightness(1.05)}
+button:active{transform:translateY(1px)}
+input:focus,textarea:focus{outline:2px solid oklch(0.72 calc(0.13*var(--pw-cmul,1)) var(--pw-hue,265));outline-offset:2px;border-radius:3.5px}
+@keyframes pw-spin{to{transform:rotate(360deg)}}
+@keyframes pw-fill{from{width:8%}to{width:100%}}
+@keyframes pw-shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+@keyframes pw-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pw-pop{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes pw-rise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+</style>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</helmet>
+
+<div style="display:flex;height:100vh;width:100%;background:radial-gradient(900px 520px at 96% -12%, oklch(0.9 calc(0.09*var(--pw-cmul,1)) var(--pw-hue,265)) 0%, transparent 58%), radial-gradient(760px 620px at -8% 108%, oklch(0.92 calc(0.07*var(--pw-cmul,1)) calc(var(--pw-hue,265) + 40)) 0%, transparent 55%), linear-gradient(155deg, oklch(0.96 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265)) 0%, oklch(0.955 0.012 258) 55%, oklch(0.95 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265)) 100%);color:oklch(0.22 0.01 60);overflow:hidden;padding:6.4px;gap:3.1px;--pw-hue:{{ hue }};--pw-cmul:{{ cmul }};--pw-dark:{{ dark }}">
+
+  <div style="width:{{ railW }};flex:none;display:flex;flex-direction:column;align-items:{{ railAlign }};padding:3.2px 2.4px;gap:3.9px;overflow-y:auto;overflow-x:hidden;min-height:0;transition:width .18s ease">
+    <div title="Pathway" style="width:100%;display:flex;align-items:center;justify-content:{{ railItemJustify }};gap:7px;height:38px;overflow:hidden">
+      <div style="width:34px;height:34px;border-radius:9.7px;background:linear-gradient(135deg,oklch(calc(0.7 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265)));box-shadow:0 5px 12px -3px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 55%);display:flex;align-items:center;justify-content:center;flex:none">
+        <div style="width:12px;height:12px;border-radius:50%;background:#fff"></div>
+      </div>
+      <span style="display:{{ labelDisplay }};font-weight:700;font-size:11.7px;color:oklch(0.2 0.01 60);letter-spacing:-.01em;white-space:nowrap">Pathway</span>
+    </div>
+
+    <div style="width:100%;height:1px;background:oklch(0.9 0.01 262);margin:3px 0"></div>
+
+    <sc-for list="{{ navMain }}" as="item" hint-placeholder-count="4">
+      <div onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:100%;height:38px;border-radius:9.7px;display:flex;align-items:center;justify-content:{{ item.justify }};gap:7px;padding:0 7.2px;cursor:pointer;background:{{ item.bg }};box-shadow:{{ item.shadow }};overflow:hidden" style-hover="background:oklch(0.965 calc(0.01*var(--pw-cmul,1)) var(--pw-hue,265))">
+        <span style="width:21px;height:21px;display:flex;align-items:center;justify-content:center;flex:none;color:{{ item.iconColor }}"><i data-lucide="{{ item.icon }}"></i></span>
+        <span style="display:{{ item.labelDisplay }};font-size:9.9px;font-weight:{{ item.weight }};color:{{ item.color }};white-space:nowrap">{{ item.label }}</span>
+      </div>
+    </sc-for>
+
+    <div style="width:100%;height:1px;background:oklch(0.9 0.01 262);margin:3px 0"></div>
+
+    <sc-for list="{{ navAi }}" as="item" hint-placeholder-count="2">
+      <div onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:100%;height:38px;border-radius:9.7px;display:flex;align-items:center;justify-content:{{ item.justify }};gap:7px;padding:0 7.2px;cursor:pointer;background:{{ item.bg }};box-shadow:{{ item.shadow }};overflow:hidden" style-hover="background:oklch(0.965 calc(0.01*var(--pw-cmul,1)) var(--pw-hue,265))">
+        <span style="width:21px;height:21px;display:flex;align-items:center;justify-content:center;flex:none;color:{{ item.iconColor }}"><i data-lucide="{{ item.icon }}"></i></span>
+        <span style="display:{{ item.labelDisplay }};font-size:9.9px;font-weight:{{ item.weight }};color:{{ item.color }};white-space:nowrap">{{ item.label }}</span>
+      </div>
+    </sc-for>
+
+    <div style="width:100%;height:1px;background:oklch(0.9 0.01 262);margin:3px 0"></div>
+
+    <sc-for list="{{ navTrack }}" as="item" hint-placeholder-count="1">
+      <div onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:100%;height:38px;border-radius:9.7px;display:flex;align-items:center;justify-content:{{ item.justify }};gap:7px;padding:0 7.2px;cursor:pointer;background:{{ item.bg }};box-shadow:{{ item.shadow }};overflow:hidden" style-hover="background:oklch(0.965 calc(0.01*var(--pw-cmul,1)) var(--pw-hue,265))">
+        <span style="width:21px;height:21px;display:flex;align-items:center;justify-content:center;flex:none;color:{{ item.iconColor }}"><i data-lucide="{{ item.icon }}"></i></span>
+        <span style="display:{{ item.labelDisplay }};font-size:9.9px;font-weight:{{ item.weight }};color:{{ item.color }};white-space:nowrap">{{ item.label }}</span>
+      </div>
+    </sc-for>
+
+    <div style="flex:1"></div>
+
+    <sc-for list="{{ navBottom }}" as="item" hint-placeholder-count="1">
+      <div onClick="{{ item.onClick }}" title="{{ item.label }}" style="width:100%;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:{{ item.justify }};gap:9px;padding:0 9px;cursor:pointer;background:{{ item.bg }};box-shadow:{{ item.shadow }};overflow:hidden" style-hover="background:oklch(0.965 calc(0.01*var(--pw-cmul,1)) var(--pw-hue,265))">
+        <span style="width:21px;height:21px;display:flex;align-items:center;justify-content:center;flex:none;color:{{ item.iconColor }}"><i data-lucide="{{ item.icon }}"></i></span>
+        <span style="display:{{ item.labelDisplay }};font-size:11px;font-weight:{{ item.weight }};color:{{ item.color }};white-space:nowrap">{{ item.label }}</span>
+      </div>
+    </sc-for>
+
+    <div onClick="{{ toggleRail }}" title="Toggle sidebar" style="width:100%;display:flex;align-items:center;justify-content:{{ railItemJustify }};gap:9px;height:38px;border-radius:11px;cursor:pointer;padding:0 9px" style-hover="background:oklch(0.965 calc(0.01*var(--pw-cmul,1)) var(--pw-hue,265))">
+      <span style="width:21px;height:21px;color:oklch(0.48 0.012 262);display:flex;align-items:center;justify-content:center;flex:none;transform:{{ railToggleRot }}"><i data-lucide="{{ railToggleIcon }}"></i></span>
+      <span style="display:{{ labelDisplay }};font-size:11px;font-weight:500;color:oklch(0.3 0.012 262);white-space:nowrap">Collapse</span>
+    </div>
+
+    <div title="Jordan Reyes" style="width:100%;display:flex;align-items:center;justify-content:{{ railItemJustify }};gap:7px;height:40px;padding:0 4.8px;border-radius:9.7px;cursor:pointer;overflow:hidden" style-hover="background:oklch(0.965 calc(0.01*var(--pw-cmul,1)) var(--pw-hue,265))">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,oklch(0.72 0.1 260),oklch(0.6 0.12 280));flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9.9px;font-weight:700;box-shadow:0 3px 8px -2px oklch(0.6 0.12 270 / 55%)">JR</div>
+      <div style="display:{{ labelDisplay }};flex-direction:column;line-height:1.15;overflow:hidden">
+        <span style="font-size:9.9px;font-weight:600;color:oklch(0.25 0.01 60);white-space:nowrap">Jordan Reyes</span>
+        <span style="font-size:8.1px;color:oklch(0.55 0.01 60);white-space:nowrap">jordan.reyes@mail.com</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;background:oklch(0.986 0.004 258);border:1px solid oklch(0.93 0.008 262);border-radius:17.6px;box-shadow:0 2px 4px rgba(22,24,42,.05),0 14px 26px -10px rgba(22,24,42,.13),0 42px 72px -34px rgba(22,24,42,.32);padding:12.8px 14.4px 22.4px;min-width:0">
+
+    <div style="position:sticky;top:-16px;z-index:20;margin:-16px -18px 12px;padding:8.8px 14.4px;background:oklch(0.986 0.004 258 / 88%);backdrop-filter:blur(8px);border-bottom:1px solid oklch(0.93 0.008 262);box-shadow:0 8px 18px -12px rgba(22,24,42,.2);display:flex;align-items:center;justify-content:space-between;gap:9.4px">
+      <div style="display:flex;align-items:center;gap:5.5px;font-size:9.9px;color:oklch(0.55 0.01 60)">
+        <span style="font-weight:600">Pathway</span>
+        <span style="color:oklch(0.75 0.01 60)">/</span>
+        <span style="font-weight:700;color:oklch(0.25 0.01 60)">{{ pageTitle }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6.2px">
+        <div onClick="{{ toggleNotif }}" title="Notifications" style="width:34px;height:34px;border-radius:8.8px;background:#fff;border:1px solid oklch(0.915 0.008 262);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" style-hover="background:oklch(0.965 0.01 var(--pw-hue,265))">
+          <span style="color:oklch(0.4 0.012 262);display:flex;align-items:center;justify-content:center"><i data-lucide="bell"></i></span>
+          <span style="position:absolute;top:6px;right:7px;width:7px;height:7px;border-radius:50%;background:oklch(0.62 0.2 25);border:1.5px solid #fff"></span>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ isOnboarding }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:8.3px;max-width:1180px;animation:pw-enter .3s ease both">
+        <div>
+          <h1 style="margin:0 0 2.6px;font-size:16.7px;font-weight:700;color:oklch(0.2 0.01 60)">Set up your job search</h1>
+          <p style="margin:0;font-size:9.9px;color:oklch(0.5 0.01 60)">Upload your resume and tell us what you're looking for — takes about 2 minutes.</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:7.5px">
+          <div style="background:#fff;border:1px dashed oklch(0.8 calc(0.06*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 8.8px 22.9px -12.3px rgba(22,24,42,.1);padding:18.3px 14.1px;display:flex;flex-direction:column;align-items:center;gap:5.6px;text-align:center">
+            <div style="width:38.7px;height:38.7px;border-radius:9.3px;background:oklch(0.95 calc(0.04*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;align-items:center;justify-content:center">
+              <div style="width:14.1px;height:14.1px;border-radius:2.3px;background:oklch(0.6 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))"></div>
+            </div>
+            <div>
+              <div style="font-size:10.3px;font-weight:600;color:oklch(0.22 0.01 60)">jordan_reyes_resume.pdf</div>
+              <div style="font-size:8.7px;color:oklch(0.55 0.01 60);margin-top:2px">Uploaded · parsed by AI in 4s</div>
+            </div>
+            <div style="display:flex;gap:2.8px;flex-wrap:wrap;justify-content:center">
+              <span style="font-size:7.9px;font-weight:600;padding:2.1px 6.3px;border-radius:12.4px;background:oklch(0.95 0.05 145);color:oklch(0.4 0.13 145)">6 skills found</span>
+              <span style="font-size:7.9px;font-weight:600;padding:2.1px 6.3px;border-radius:12.4px;background:oklch(0.95 0.05 145);color:oklch(0.4 0.13 145)">2 roles found</span>
+            </div>
+            <button style="padding:4px 8.1px;border-radius:6.2px;border:1px solid oklch(0.88 0.006 60);background:#fff;font-size:9.1px;font-weight:600;cursor:pointer">Replace file</button>
+          </div>
+
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 8.8px 22.9px -12.3px rgba(22,24,42,.1);padding:14.1px;display:flex;flex-direction:column;gap:4.7px">
+            <h3 style="margin:0 0 2px;font-size:10.7px;font-weight:700">A few quick preferences</h3>
+            <sc-for list="{{ onboardingFields }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8.5px;border:1px solid oklch(0.935 0.006 262);border-radius:7px;background:oklch(0.985 0.004 258)">
+                <div style="display:flex;flex-direction:column;gap:0.7px">
+                  <span style="font-size:7.9px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.03em">{{ f.label }}</span>
+                  <span style="font-size:9.9px;font-weight:600;color:oklch(0.25 0.01 60)">{{ f.value }}</span>
+                </div>
+                <span style="font-size:8.7px;font-weight:600;color:oklch(0.55 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265))">Edit</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:oklch(0.98 0.006 258);border:1px solid oklch(0.925 0.006 262);border-radius:9.3px;padding:8.5px 11.3px;display:flex;align-items:center;justify-content:space-between;gap:7.5px">
+          <span style="font-size:9.1px;color:oklch(0.5 0.01 60);line-height:1.5">AI parses your resume and drafts tailored applications — every submission still requires your approval. <a href="#" style="font-weight:600">How this works →</a></span>
+          <button onClick="{{ goToOverview }}" style="flex:none;padding:5px 10.2px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.9px;font-weight:700;cursor:pointer;box-shadow:0 5.3px 14.1px -5.3px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 50%)">Save & find matches</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:11px;max-width:1180px;animation:pw-enter .3s ease both">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px">
+          <div>
+            <div style="font-size:8.1px;font-weight:700;letter-spacing:.09em;color:oklch(0.6 0.01 60);margin-bottom:5px">WELCOME BACK</div>
+            <h1 style="margin:0;font-size:18px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">Jordan Reyes</h1>
+            <p style="margin:5px 0 0;font-size:10.8px;color:oklch(0.5 0.01 60);max-width:440px;line-height:1.5">You've sent 42 applications and have 5 interviews lined up — keep the momentum going.</p>
+          </div>
+          <div style="flex:none;display:flex;align-items:center;gap:13px">
+            <div style="display:flex;flex-direction:column;gap:4.7px;width:120px">
+              <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:8.6px;font-weight:600;color:oklch(0.5 0.01 60)">Profile setup</span><span style="font-size:8.6px;font-weight:700;color:oklch(0.28 0.01 60)">60%</span></div>
+              <div style="height:5px;border-radius:17.6px;background:oklch(0.93 0.006 262);overflow:hidden"><div style="height:100%;width:60%;border-radius:17.6px;background:linear-gradient(90deg,oklch(0.7 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))"></div></div>
+            </div>
+            <button onClick="{{ goToResume }}" style="flex:none;padding:6px 12px;border-radius:8px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.9px;font-weight:700;cursor:pointer;box-shadow:0 6px 16px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%);white-space:nowrap">Complete profile</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6.6px">
+          <sc-for list="{{ statCards }}" as="s" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);padding:12px;display:flex;flex-direction:column;gap:8.6px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between">
+                <div><div style="font-size:7.9px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60)">{{ s.label }}</div><div style="font-size:21.6px;font-weight:700;color:oklch(0.18 0.01 60);margin-top:4px;letter-spacing:-.01em">{{ s.value }}</div></div>
+                <span style="width:30px;height:30px;border-radius:7.9px;background:oklch(0.965 0.02 var(--pw-hue,265));display:flex;align-items:center;justify-content:center;flex:none;color:oklch(0.5 calc(0.16*var(--pw-cmul,1)) var(--pw-hue,265))"><i data-lucide="{{ s.icon }}"></i></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:3.9px"><span style="font-size:8.3px;font-weight:700;color:{{ s.deltaColor }}">{{ s.delta }}</span><span style="font-size:8.3px;color:oklch(0.55 0.01 60)">{{ s.deltaText }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:7.5px">
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);padding:12.6px;display:flex;flex-direction:column;gap:4.7px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0;font-size:11.7px;font-weight:700">Applications over time</h3><span style="font-size:8.1px;font-weight:600;color:oklch(0.55 0.01 60)">Last 8 weeks</span></div>
+            <div style="display:flex;align-items:flex-end;gap:5.5px;height:104px;margin-top:4px">
+              <sc-for list="{{ weeklyApps }}" as="w" hint-placeholder-count="8">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3.9px;height:100%;justify-content:flex-end"><span style="font-size:7.2px;font-weight:700;color:oklch(0.5 0.012 262)">{{ w.value }}</span><div style="width:100%;max-width:20px;height:{{ w.h }};border-radius:4.4px 4.4px 2px 2px;transform-origin:bottom;animation:pw-rise .55s cubic-bezier(.2,.8,.2,1) both;background:linear-gradient(180deg,oklch(0.72 calc(0.16*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))"></div><span style="font-size:7.2px;color:oklch(0.55 0.01 60)">{{ w.label }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);padding:12.6px;display:flex;flex-direction:column;gap:7.8px">
+            <h3 style="margin:0;font-size:11.7px;font-weight:700">Outcomes</h3>
+            <div style="display:flex;align-items:center;gap:10.9px">
+              <div style="width:92px;height:92px;border-radius:50%;flex:none;background:conic-gradient(oklch(0.6 0.14 250) 0 42.9%, oklch(0.72 0.012 262) 42.9% 64.3%, oklch(0.6 0.14 145) 64.3% 83.3%, oklch(0.62 0.18 25) 83.3% 95.2%, oklch(0.72 0.14 70) 95.2% 100%);display:flex;align-items:center;justify-content:center"><div style="width:56px;height:56px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 1px 3px rgba(22,24,42,.06)"><span style="font-size:15.3px;font-weight:800;color:oklch(0.2 0.01 60);line-height:1">42</span><span style="font-size:6.8px;color:oklch(0.55 0.01 60)">total</span></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:3.9px">
+                <sc-for list="{{ outcomes }}" as="o" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:5.5px"><div style="width:8px;height:8px;border-radius:2.2px;background:{{ o.color }};flex:none"></div><span style="font-size:8.6px;color:oklch(0.35 0.01 60);flex:1">{{ o.label }}</span><span style="font-size:8.6px;font-weight:700;color:oklch(0.25 0.01 60)">{{ o.count }}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7.5px">
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);padding:12.6px;display:flex;flex-direction:column;gap:5.6px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0;font-size:11.7px;font-weight:700">Top matches for you</h3><a href="#" onClick="{{ goToJobs }}" style="font-size:8.7px;font-weight:600">View all →</a></div>
+            <sc-for list="{{ topMatches }}" as="j" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:5.6px;padding:7px;border:1px solid oklch(0.935 0.006 262);border-radius:7.7px">
+                <div style="width:28.2px;height:28.2px;border-radius:6.2px;background:{{ j.logoBg }};flex:none"></div>
+                <div style="display:flex;flex-direction:column;gap:1.4px;flex:1;min-width:0"><span style="font-size:9.5px;font-weight:600;color:oklch(0.2 0.01 60)">{{ j.title }}</span><span style="font-size:8.3px;color:oklch(0.53 0.01 60)">{{ j.company }} · {{ j.location }}</span></div>
+                <div style="font-size:8.3px;font-weight:700;padding:2.1px 5.6px;border-radius:12.4px;background:{{ j.scoreBg }};color:{{ j.scoreColor }};flex:none">{{ j.matchScore }}%</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);padding:12.6px;display:flex;flex-direction:column;gap:4.7px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0;font-size:11.7px;font-weight:700">Recently applied</h3><a href="#" onClick="{{ goToApplications }}" style="font-size:8.7px;font-weight:600">View all →</a></div>
+            <sc-for list="{{ recentApplied }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:7px;padding:5.6px 0;border-top:1px solid oklch(0.945 0.006 262)">
+                <div style="width:26px;height:26px;border-radius:6.2px;background:{{ r.logoBg }};flex:none"></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px"><span style="font-size:9.5px;font-weight:600;color:oklch(0.22 0.01 60)">{{ r.role }}</span><span style="font-size:8.1px;color:oklch(0.55 0.01 60)">{{ r.company }}</span></div>
+                <span style="font-size:7.9px;font-weight:600;padding:2.1px 6.4px;border-radius:12.3px;background:{{ r.statusBg }};color:{{ r.statusColor }};flex:none">{{ r.status }}</span>
+                <span style="font-size:8.1px;color:oklch(0.55 0.01 60);flex:none;width:40px;text-align:right">{{ r.date }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isResume }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:8.3px;max-width:1180px;animation:pw-enter .3s ease both">
+        <div>
+          <div style="font-size:8.1px;font-weight:700;letter-spacing:.09em;color:oklch(0.6 0.01 60);margin-bottom:5px">DOCUMENTS</div>
+          <h1 style="margin:0;font-size:18px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">My Resumes</h1>
+          <p style="margin:5px 0 0;font-size:10.8px;color:oklch(0.5 0.01 60)">All your resumes and tailored versions in one place.</p>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:7.5px;flex-wrap:wrap">
+          <span style="font-size:11.7px;font-weight:700;color:oklch(0.2 0.01 60)">Recently opened</span>
+          <div style="display:flex;align-items:center;gap:3.7px">
+            <span style="display:flex;align-items:center;gap:2.8px;font-size:8.7px;font-weight:600;color:oklch(0.35 0.01 60);background:#fff;border:1px solid oklch(0.9 0.006 262);border-radius:6.2px;padding:4.2px 7.8px;cursor:pointer">All Files <span style="font-size:6.3px;color:oklch(0.55 0.01 60)">▼</span></span>
+            <span style="display:flex;align-items:center;gap:2.8px;font-size:8.7px;font-weight:600;color:oklch(0.35 0.01 60);background:#fff;border:1px solid oklch(0.9 0.006 262);border-radius:6.2px;padding:4.2px 7.8px;cursor:pointer">Last viewed <span style="font-size:6.3px;color:oklch(0.55 0.01 60)">▼</span></span>
+            <div style="display:flex;background:#fff;border:1px solid oklch(0.9 0.006 262);border-radius:6.2px;overflow:hidden">
+              <div style="padding:5px 6.3px;background:oklch(0.945 0.006 262);display:flex;gap:1.4px;cursor:pointer"><div style="width:4.4px;height:4.4px;background:oklch(0.4 0.01 60);border-radius:1px"></div><div style="width:4.4px;height:4.4px;background:oklch(0.4 0.01 60);border-radius:1px"></div><div style="width:4.4px;height:4.4px;background:oklch(0.4 0.01 60);border-radius:1px;margin-top:1px"></div><div style="width:4.4px;height:4.4px;background:oklch(0.4 0.01 60);border-radius:1px;margin-top:1px"></div></div>
+              <div style="padding:5px 6.3px;display:flex;flex-direction:column;gap:1.4px;justify-content:center;cursor:pointer"><div style="width:9.7px;height:2px;background:oklch(0.65 0.01 60);border-radius:1px"></div><div style="width:9.7px;height:2px;background:oklch(0.65 0.01 60);border-radius:1px"></div><div style="width:9.7px;height:2px;background:oklch(0.65 0.01 60);border-radius:1px"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8.3px">
+            <sc-for list="{{ skel4 }}" as="n" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:4.7px">
+                <div style="height:154.9px;border-radius:10px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+                <div style="height:9px;width:65%;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+                <div style="height:7px;width:40%;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:41.6px 16px;text-align:center;background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px">
+            <div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.96 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;align-items:center;justify-content:center;color:oklch(0.55 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))"><i data-lucide="file-plus-2"></i></div>
+            <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.25 0.01 60)">No resumes yet</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">Upload your first resume to start tailoring and applying.</div></div>
+            <button onClick="{{ openUpload }}" style="padding:4px 8.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Upload resume</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:41.6px 16px;text-align:center;background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px">
+            <div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.96 0.03 25);display:flex;align-items:center;justify-content:center;color:oklch(0.6 0.18 25)"><i data-lucide="triangle-alert"></i></div>
+            <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.25 0.01 60)">Couldn't load your resumes</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">Something went wrong loading your files. Please try again.</div></div>
+            <button onClick="{{ resetData }}" style="padding:4px 8.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Retry</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8.3px">
+          <div onClick="{{ openUpload }}" style="display:flex;flex-direction:column;gap:4.2px;cursor:pointer">
+            <div style="border:1.5px dashed oklch(0.8 calc(0.06*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:10px;height:154.9px;background:oklch(0.98 calc(0.012*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5.1px" style-hover="background:oklch(0.965 calc(0.025*var(--pw-cmul,1)) var(--pw-hue,265))">
+              <div style="width:35.2px;height:35.2px;border-radius:8.5px;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));box-shadow:0 5.3px 12.3px -4.4px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 55%);display:flex;align-items:center;justify-content:center;position:relative">
+                <div style="width:13.2px;height:2.2px;background:#fff;border-radius:2px;position:absolute"></div>
+                <div style="width:2.2px;height:13.2px;background:#fff;border-radius:2px;position:absolute"></div>
+              </div>
+              <span style="font-size:9.5px;font-weight:700;color:oklch(0.4 calc(0.14*var(--pw-cmul,1)) var(--pw-hue,265))">Upload Resume</span>
+            </div>
+            <div style="padding:0 2px">
+              <div style="font-size:9.9px;font-weight:600;color:oklch(0.22 0.01 60)">New upload</div>
+              <div style="font-size:8.3px;color:oklch(0.55 0.01 60)">PDF or DOCX</div>
+            </div>
+          </div>
+
+          <sc-for list="{{ resumeFiles }}" as="f" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:4.2px;cursor:pointer">
+              <div style="position:relative;border:1px solid oklch(0.925 0.006 262);border-radius:10px;height:154.9px;background:oklch(0.975 0.005 258);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 1px 2px rgba(22,24,42,.02);transition:transform .16s ease,box-shadow .16s ease" style-hover="transform:translateY(-3px);box-shadow:0 1px 2px rgba(22,24,42,.03),0 16px 30px -15px rgba(22,24,42,.2)">
+                <div style="width:100.3px;height:141.8px;background:#fff;border-radius:3.1px;box-shadow:0 5.3px 14.1px -7px rgba(22,24,42,.22);display:flex;overflow:hidden">
+                  <sc-if value="{{ f.photo }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:29.9px;flex:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));padding:5.6px 3.5px;display:flex;flex-direction:column;align-items:center;gap:2.3px">
+                      <div style="width:17.6px;height:17.6px;border-radius:50%;background:oklch(0.85 calc(0.06*var(--pw-cmul,1)) var(--pw-hue,265))"></div>
+                      <div style="width:100%;height:2px;background:oklch(0.8 calc(0.09*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:1px;margin-top:2.6px"></div>
+                      <div style="width:80%;height:2px;background:oklch(0.8 calc(0.09*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:1px"></div>
+                      <div style="width:90%;height:2px;background:oklch(0.8 calc(0.09*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:1px"></div>
+                    </div>
+                    <div style="flex:1;padding:6.3px 5.6px;display:flex;flex-direction:column;gap:1.8px">
+                      <div style="height:3.5px;width:70%;background:oklch(0.3 0.01 60);border-radius:1px"></div>
+                      <div style="height:2px;width:50%;background:oklch(0.85 0.006 60);border-radius:1px;margin-bottom:2.6px"></div>
+                      <div style="height:2px;width:95%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                      <div style="height:2px;width:88%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                      <div style="height:2px;width:92%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                      <div style="height:2px;width:60%;background:oklch(0.9 0.006 262);border-radius:1px;margin-top:3.5px"></div>
+                      <div style="height:2px;width:80%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ f.blank }}" hint-placeholder-val="{{ false }}">
+                    <div style="flex:1;padding:11.3px 8.5px;display:flex;flex-direction:column;gap:2.3px;justify-content:center">
+                      <div style="height:2.6px;width:80%;background:oklch(0.925 0.006 262);border-radius:1px"></div>
+                      <div style="height:2.6px;width:65%;background:oklch(0.925 0.006 262);border-radius:1px"></div>
+                      <div style="height:2.6px;width:72%;background:oklch(0.935 0.006 262);border-radius:1px"></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ f.plain }}" hint-placeholder-val="{{ true }}">
+                    <div style="flex:1;padding:7.8px 7px;display:flex;flex-direction:column;gap:1.8px">
+                      <div style="height:3.5px;width:55%;background:oklch(0.3 0.01 60);border-radius:1px;align-self:center"></div>
+                      <div style="height:2px;width:40%;background:oklch(0.85 0.006 60);border-radius:1px;align-self:center;margin-bottom:4.4px"></div>
+                      <div style="height:2px;width:95%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                      <div style="height:2px;width:88%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                      <div style="height:2px;width:92%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                      <div style="height:2px;width:70%;background:oklch(0.9 0.006 262);border-radius:1px;margin-top:4.4px"></div>
+                      <div style="height:2px;width:85%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                      <div style="height:2px;width:80%;background:oklch(0.9 0.006 262);border-radius:1px"></div>
+                    </div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ f.locked }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;inset:0;background:oklch(0.965 0.006 70 / 55%);display:flex;align-items:center;justify-content:center">
+                    <div style="display:flex;flex-direction:column;align-items:center">
+                      <div style="width:10.6px;height:7.9px;border:2px solid oklch(0.45 0.01 60);border-bottom:none;border-radius:4.7px 4.7px 0 0"></div>
+                      <div style="width:15.8px;height:12.3px;background:oklch(0.45 0.01 60);border-radius:2.3px;margin-top:-1px"></div>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="padding:0 2px">
+                <div style="font-size:9.9px;font-weight:600;color:oklch(0.22 0.01 60)">{{ f.title }}</div>
+                <div style="font-size:8.3px;color:oklch(0.55 0.01 60)">{{ f.subtitle }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEditor }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:7.8px;animation:pw-enter .3s ease both">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:9.4px">
+          <div style="display:flex;align-items:center;gap:7.8px;min-width:0">
+            <a href="#" onClick="{{ goToResume }}" title="Back to my resumes" style="width:29px;height:29px;border-radius:7px;border:1px solid oklch(0.9 0.006 262);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.42 0.01 60);flex:none"><i data-lucide="arrow-left"></i></a>
+            <div style="display:flex;align-items:center;gap:3.9px;min-width:0"><span style="font-size:11.7px;font-weight:700;color:oklch(0.2 0.01 60);white-space:nowrap">Jordan Reyes — Resume</span><span style="color:oklch(0.6 0.01 60);display:flex"><i data-lucide="chevron-down"></i></span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4.7px">
+            <span style="display:flex;align-items:center;gap:3.1px;font-size:8.6px;color:oklch(0.5 0.01 60);margin-right:2px"><span style="color:oklch(0.55 0.13 145);display:flex"><i data-lucide="check"></i></span>Saved</span>
+            <div title="Undo" style="width:29px;height:29px;border-radius:7px;border:1px solid oklch(0.9 0.006 262);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.42 0.01 60);flex:none" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="undo-2"></i></div>
+            <div title="Redo" style="width:29px;height:29px;border-radius:7px;border:1px solid oklch(0.9 0.006 262);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.42 0.01 60);flex:none" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="redo-2"></i></div>
+            <div style="width:1px;height:16px;background:oklch(0.9 0.006 262);margin:0 3px;flex:none"></div>
+            <div title="Share" style="width:29px;height:29px;border-radius:7px;border:1px solid oklch(0.9 0.006 262);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.42 0.01 60);flex:none" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="link-2"></i></div>
+            <div title="Zoom" style="display:flex;align-items:center;gap:3.9px;height:27px;padding:0 7.2px;border-radius:5.3px;border:1px solid oklch(0.9 0.006 262);background:#fff;font-size:8.7px;font-weight:600;color:oklch(0.3 0.01 60);cursor:pointer;height:29px">100% <span style="font-size:5.9px;color:oklch(0.6 0.01 60)">▼</span></div>
+            <button style="height:29px;padding:0 7.5px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:3.9px;box-shadow:0 5px 14px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)"><i data-lucide="download"></i>Download</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:190px 1fr 198px;gap:7px;align-items:start">
+
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);padding:9.6px;display:flex;flex-direction:column;gap:6.2px">
+            <div style="display:flex;background:oklch(0.975 0.005 258);border:1px solid oklch(0.925 0.006 262);border-radius:7px;padding:2.4px">
+              <span style="flex:1;text-align:center;font-size:8.7px;font-weight:600;padding:4px;border-radius:5.3px;background:#fff;color:oklch(0.2 0.01 60);box-shadow:0 1px 2px rgba(0,0,0,.06)">Builder</span>
+              <span style="flex:1;text-align:center;font-size:8.7px;font-weight:600;padding:4px;color:oklch(0.55 0.01 60);cursor:pointer">Templates</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4.7px;padding-bottom:8px;border-bottom:1px solid oklch(0.945 0.006 262)">
+              <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:9.5px;font-weight:700;color:oklch(0.2 0.01 60)">Professional Summary</span><span style="color:oklch(0.55 0.01 60);display:flex;cursor:pointer"><i data-lucide="minus"></i></span></div>
+              <div style="border:1px solid oklch(0.915 0.006 262);border-radius:6.2px;padding:7.2px;font-size:8.3px;line-height:1.5;color:oklch(0.6 0.01 60);min-height:52px;background:oklch(0.993 0.002 258)">Write a brief summary of your professional experience here</div>
+              <button style="padding:4.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:8.7px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3.9px;box-shadow:0 5px 14px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)"><i data-lucide="sparkles"></i>Write with AI</button>
+            </div>
+            <sc-for list="{{ builderSections }}" as="sec" hint-placeholder-count="8">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:3.2px 0;cursor:pointer" style-hover="opacity:.7">
+                <div style="display:flex;align-items:center;gap:5.5px"><span style="color:oklch(0.75 0.01 60);display:flex"><i data-lucide="grip-vertical"></i></span><span style="font-size:9.5px;font-weight:600;color:oklch(0.3 0.01 60)">{{ sec }}</span></div>
+                <span style="width:22px;height:22px;border-radius:5.3px;background:oklch(0.965 0.02 var(--pw-hue,265));display:flex;align-items:center;justify-content:center;color:oklch(0.5 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))"><i data-lucide="plus"></i></span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:2.3px;flex-wrap:wrap;padding:6.4px 8px;border-bottom:1px solid oklch(0.935 0.006 262);background:oklch(0.989 0.003 258)">
+              <div style="display:flex;align-items:center;gap:3.9px;height:27px;padding:0 7.2px;border-radius:5.3px;border:1px solid oklch(0.9 0.006 262);background:#fff;font-size:8.7px;font-weight:600;color:oklch(0.3 0.01 60);cursor:pointer">Inter <span style="font-size:5.9px;color:oklch(0.6 0.01 60)">▼</span></div>
+              <div style="display:flex;align-items:center;gap:3.9px;height:27px;padding:0 7.2px;border-radius:5.3px;border:1px solid oklch(0.9 0.006 262);background:#fff;font-size:8.7px;font-weight:600;color:oklch(0.3 0.01 60);cursor:pointer">14 <span style="font-size:5.9px;color:oklch(0.6 0.01 60)">▼</span></div>
+              <div title="Text color" style="width:20px;height:20px;border-radius:4.4px;background:oklch(0.2 0.01 60);border:1px solid oklch(0.9 0.006 262);cursor:pointer"></div>
+              <div style="width:1px;height:16px;background:oklch(0.9 0.006 262);margin:0 3px;flex:none"></div>
+              <sc-for list="{{ toolIcons }}" as="ic" hint-placeholder-count="4"><div style="width:27px;height:27px;border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.4 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="{{ ic }}"></i></div></sc-for>
+              <div style="width:1px;height:16px;background:oklch(0.9 0.006 262);margin:0 3px;flex:none"></div>
+              <sc-for list="{{ listIcons }}" as="ic" hint-placeholder-count="4"><div style="width:27px;height:27px;border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.4 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="{{ ic }}"></i></div></sc-for>
+              <div style="width:1px;height:16px;background:oklch(0.9 0.006 262);margin:0 3px;flex:none"></div>
+              <sc-for list="{{ alignBarIcons }}" as="ic" hint-placeholder-count="3"><div style="width:27px;height:27px;border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.4 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="{{ ic }}"></i></div></sc-for>
+              <div style="display:flex;align-items:center;gap:3.9px;height:27px;padding:0 7.2px;border-radius:5.3px;border:1px solid oklch(0.9 0.006 262);background:#fff;font-size:8.7px;font-weight:600;color:oklch(0.3 0.01 60);cursor:pointer;margin-left:auto">Position <span style="font-size:5.9px;color:oklch(0.6 0.01 60)">▼</span></div>
+            </div>
+
+            <div style="background:oklch(0.948 0.006 258);padding:19.2px 16px;overflow:visible;display:flex;flex-direction:column;align-items:center;gap:7.8px">
+            <div style="width:100%;max-width:540px;aspect-ratio:210/297;background:#fff;box-shadow:0 8px 30px -10px rgba(22,24,42,.28);border-radius:2.6px;padding:27.2px 32px;display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:7.8px">
+                <div><div style="font-size:18.9px;font-weight:800;color:oklch(0.15 0.01 60);letter-spacing:-.01em;white-space:nowrap">Jordan Reyes</div><div style="font-size:9.5px;color:oklch(0.45 0.01 60);margin-top:2px">Senior Product Designer</div></div>
+                <div style="text-align:right;font-size:7.7px;color:oklch(0.5 0.01 60);line-height:1.8">
+                  <div style="display:flex;align-items:center;justify-content:flex-end;gap:3.1px">jordanreyes.design<span style="color:oklch(0.6 0.01 60);display:flex"><i data-lucide="globe"></i></span></div>
+                  <div style="display:flex;align-items:center;justify-content:flex-end;gap:3.1px">jordan.reyes@mail.com<span style="color:oklch(0.6 0.01 60);display:flex"><i data-lucide="mail"></i></span></div>
+                  <div style="display:flex;align-items:center;justify-content:flex-end;gap:3.1px">+1 415 555 0148<span style="color:oklch(0.6 0.01 60);display:flex"><i data-lucide="phone"></i></span></div>
+                </div>
+              </div>
+
+              <div style="position:relative">
+                <div style="border:1.5px solid oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:5.3px;background:oklch(0.975 0.025 var(--pw-hue,265));padding:7.2px 8.8px;font-size:8.7px;line-height:1.6;color:oklch(0.3 0.01 60)">Product designer with six years of experience leading systems-thinking and 0-to-1 launches for B2B SaaS. Passionate about shipping intuitive, high-craft experiences in close partnership with product and engineering.</div>
+                <div style="display:flex;align-items:center;gap:2px;background:oklch(0.17 0.01 60);border-radius:7px;padding:4px 4.8px;margin-top:7px;width:fit-content;box-shadow:0 8px 20px -8px rgba(0,0,0,.4)">
+                  <span style="display:flex;align-items:center;gap:3.9px;font-size:7.9px;font-weight:600;color:#fff;padding:3.2px 7.2px;border-radius:4.4px;background:rgba(255,255,255,.12);cursor:pointer"><i data-lucide="sparkles"></i>Rewrite</span>
+                  <span style="font-size:7.9px;font-weight:600;color:oklch(0.85 0.006 60);padding:3.2px 7.2px;cursor:pointer">Match JD</span>
+                  <span style="font-size:7.9px;font-weight:600;color:oklch(0.85 0.006 60);padding:3.2px 7.2px;cursor:pointer">Improve clarity</span>
+                  <span style="display:flex;align-items:center;gap:2.3px;font-size:7.9px;font-weight:600;color:oklch(0.85 0.006 60);padding:3.2px 7.2px;cursor:pointer">Tone <span style="font-size:5.9px">▼</span></span>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:6.2px;margin-top:4px">
+                <sc-for list="{{ editorExperience }}" as="x" hint-placeholder-count="2">
+                  <div>
+                    <div style="font-size:6.8px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em">{{ x.dates }}</div>
+                    <div style="font-size:9.5px;font-weight:700;color:oklch(0.2 0.01 60);margin-top:1px">{{ x.title }}</div>
+                    <div style="display:flex;flex-direction:column;gap:2px;margin-top:4px">
+                      <sc-for list="{{ x.bullets }}" as="b" hint-placeholder-count="3"><div style="display:flex;gap:3.9px;font-size:7.9px;color:oklch(0.4 0.01 60);line-height:1.45"><span style="color:oklch(0.6 0.01 60)">•</span><span>{{ b }}</span></div></sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="margin-top:4px">
+                <div style="font-size:11.7px;font-weight:700;color:oklch(0.2 0.01 60)">Education</div>
+                <div style="font-size:6.8px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em;margin-top:5px">SEPT 2014 — MAY 2018</div>
+                <div style="font-size:8.7px;font-weight:600;color:oklch(0.25 0.01 60)">BFA in Design <span style="font-weight:400;color:oklch(0.5 0.01 60)">@ California College of the Arts</span></div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:7.8px;margin-top:4px">
+                <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.2 0.01 60);margin-bottom:5px">Skills</div><sc-for list="{{ editorSkills }}" as="s" hint-placeholder-count="5"><div style="display:flex;gap:3.9px;font-size:7.9px;color:oklch(0.4 0.01 60);line-height:1.6"><span style="color:oklch(0.6 0.01 60)">•</span><span>{{ s }}</span></div></sc-for></div>
+                <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.2 0.01 60);margin-bottom:5px">Tools</div><sc-for list="{{ editorTools }}" as="t" hint-placeholder-count="5"><div style="display:flex;gap:3.9px;font-size:7.9px;color:oklch(0.4 0.01 60);line-height:1.6"><span style="color:oklch(0.6 0.01 60)">•</span><span>{{ t }}</span></div></sc-for></div>
+              </div>
+            </div>
+            <span style="font-size:7.7px;font-weight:600;color:oklch(0.55 0.01 60)">Page 1 of 1 · A4</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="background:oklch(0.975 0.02 var(--pw-hue,265));border:1px solid oklch(0.9 calc(0.045*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:10.6px;padding:9.6px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.1)">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:4.7px"><span style="width:22px;height:22px;border-radius:6.2px;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 5px 14px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)"><i data-lucide="sparkles"></i></span><span style="font-size:9.9px;font-weight:700;color:oklch(0.25 0.01 60)">Skill Alignment</span></div>
+                <div style="display:flex;align-items:center;gap:3.9px;color:oklch(0.5 0.01 60)"><span style="display:flex;cursor:pointer"><i data-lucide="chevron-left"></i></span><span style="font-size:7.7px">1/4</span><span style="display:flex;cursor:pointer"><i data-lucide="chevron-right"></i></span></div>
+              </div>
+              <p style="margin:8px 0 10px;font-size:8.3px;line-height:1.5;color:oklch(0.45 0.01 60)">3 skills in the job description aren't listed in your profile yet.</p>
+              <div style="display:flex;gap:3.9px">
+                <button style="flex:1;padding:4px;border-radius:7px;border:1px solid oklch(0.88 0.006 262);background:#fff;font-size:8.3px;font-weight:600;cursor:pointer">Ignore</button>
+                <button style="flex:1;padding:4px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:8.3px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3.1px;box-shadow:0 5px 14px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)"><i data-lucide="plus"></i>Add skills</button>
+              </div>
+            </div>
+
+            <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);padding:9.6px;display:flex;flex-direction:column;gap:7.8px">
+              <div><div style="font-size:9px;font-weight:700;color:oklch(0.2 0.01 60);margin-bottom:6px">Alignment</div>
+                <div style="display:flex;gap:3.1px"><sc-for list="{{ alignIcons }}" as="ic" hint-placeholder-count="6"><div style="flex:1;height:26px;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.45 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="{{ ic }}"></i></div></sc-for></div>
+              </div>
+              <div><div style="font-size:9px;font-weight:700;color:oklch(0.2 0.01 60);margin-bottom:6px">Size</div>
+                <div style="display:flex;gap:3.9px">
+                  <div style="flex:1;display:flex;align-items:center;gap:3.1px;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;padding:4px 6.4px"><span style="font-size:7.9px;color:oklch(0.55 0.01 60)">W</span><span style="font-size:8.7px;font-weight:600;color:oklch(0.25 0.01 60)">128</span><span style="margin-left:auto;font-size:7.1px;color:oklch(0.6 0.01 60)">px</span></div>
+                  <div style="flex:1;display:flex;align-items:center;gap:3.1px;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;padding:4px 6.4px"><span style="font-size:7.9px;color:oklch(0.55 0.01 60)">H</span><span style="font-size:8.7px;font-weight:600;color:oklch(0.25 0.01 60)">32</span><span style="margin-left:auto;font-size:7.1px;color:oklch(0.6 0.01 60)">px</span></div>
+                </div>
+              </div>
+              <div><div style="font-size:9px;font-weight:700;color:oklch(0.2 0.01 60);margin-bottom:6px">Text</div>
+                <div style="display:flex;flex-direction:column;gap:3.9px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;padding:4.8px 7.2px"><span style="font-size:8.7px;color:oklch(0.3 0.01 60)">Inter</span><span style="font-size:5.9px;color:oklch(0.6 0.01 60)">▼</span></div>
+                  <div style="display:flex;gap:3.9px">
+                    <div style="flex:1;display:flex;align-items:center;justify-content:space-between;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;padding:4.8px 7.2px"><span style="font-size:8.7px;color:oklch(0.3 0.01 60)">Regular</span><span style="font-size:5.9px;color:oklch(0.6 0.01 60)">▼</span></div>
+                    <div style="flex:1;display:flex;align-items:center;justify-content:space-between;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;padding:4.8px 7.2px"><span style="font-size:8.7px;color:oklch(0.3 0.01 60)">14px</span><span style="font-size:5.9px;color:oklch(0.6 0.01 60)">▼</span></div>
+                  </div>
+                  <div style="display:flex;gap:3.1px">
+                    <div style="flex:1;height:27px;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.35 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="bold"></i></div>
+                    <div style="flex:1;height:27px;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.35 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="italic"></i></div>
+                    <div style="flex:1;height:27px;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.35 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="underline"></i></div>
+                    <div style="flex:1;height:27px;border:1px solid oklch(0.9 0.006 262);border-radius:5.3px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.35 0.01 60)" style-hover="background:oklch(0.95 0.008 262)"><i data-lucide="type"></i></div>
+                  </div>
+                </div>
+              </div>
+              <div><div style="font-size:9px;font-weight:700;color:oklch(0.2 0.01 60);margin-bottom:6px">Colors</div>
+                <div style="display:flex;align-items:center;gap:4.7px;border:1px solid oklch(0.9 0.006 262);border-radius:6.2px;padding:4.8px 7.2px"><div style="width:18px;height:18px;border-radius:4.4px;background:oklch(0.18 0.01 60);border:1px solid oklch(0.85 0.006 60)"></div><span style="font-size:8.7px;font-weight:600;color:oklch(0.3 0.01 60)">#1B1B1B</span></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isJobs }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:7.5px;max-width:1180px;animation:pw-enter .3s ease both">
+        <div>
+          <div style="font-size:8.1px;font-weight:700;letter-spacing:.09em;color:oklch(0.6 0.01 60);margin-bottom:5px">DISCOVER</div>
+          <h1 style="margin:0;font-size:18px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">Browse Jobs</h1>
+          <p style="margin:5px 0 0;font-size:10.8px;color:oklch(0.5 0.01 60)">AI-ranked openings matched to your resume.</p>
+        </div>
+        <div style="background:linear-gradient(120deg,oklch(0.955 0.045 var(--pw-hue,265)) 0%,oklch(0.985 0.015 var(--pw-hue,265)) 45%,#fff 100%);border:1px solid oklch(0.9 0.035 var(--pw-hue,265));border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:9px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10px 22px -16px rgba(22,24,42,.12)">
+          <div style="display:flex;align-items:stretch;background:oklch(0.981 0.004 258);border:1px solid oklch(0.925 0.006 262);border-radius:9px;overflow:hidden">
+            <div style="flex:1;display:flex;align-items:center;gap:8px;padding:7px 10px;min-width:0">
+              <span style="color:oklch(0.5 0.01 60);display:flex;flex:none"><i data-lucide="search"></i></span>
+              <span style="display:flex;align-items:center;gap:4px;font-size:9px;font-weight:600;padding:3px 8px;border-radius:6px;background:oklch(0.95 0.02 var(--pw-hue,265));color:oklch(0.35 0.01 60);flex:none">frontend <span style="display:flex;color:oklch(0.5 0.01 60);cursor:pointer"><i data-lucide="x"></i></span></span>
+              <input type="text" placeholder="Add a title, skill or keyword…" style="border:none;outline:none;font-size:9.3px;font-family:inherit;color:oklch(0.3 0.01 60);flex:1;background:transparent"></input>
+            </div>
+            <div style="width:1px;background:oklch(0.92 0.006 262)"></div>
+            <div style="flex:0 0 30%;display:flex;align-items:center;gap:7px;padding:7px 10px;background:oklch(0.966 0.004 262)">
+              <span style="color:oklch(0.6 0.02 25);display:flex;flex:none"><i data-lucide="ban"></i></span>
+              <input type="text" placeholder="Exclude keywords…" style="border:none;outline:none;font-size:9.3px;font-family:inherit;color:oklch(0.3 0.01 60);flex:1;background:transparent"></input>
+            </div>
+          </div>
+          <div style="height:1px;background:oklch(0.945 0.006 262)"></div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="display:flex;align-items:center;gap:5px;font-size:8.7px;font-weight:600;padding:3px 10px;border-radius:16px;background:#fff;border:1px solid oklch(0.9 0.006 262);color:oklch(0.35 0.01 60);cursor:pointer"><span style="display:flex;color:oklch(0.5 0.01 60)"><i data-lucide="calendar"></i></span>Date <span style="font-size:6.5px;color:oklch(0.6 0.01 60)">▼</span></span>
+          <span style="display:flex;align-items:center;gap:5px;font-size:8.7px;font-weight:600;padding:3px 10px;border-radius:16px;background:oklch(0.2 0.01 60);color:#fff;cursor:pointer"><span style="display:flex"><i data-lucide="map-pin"></i></span>Location <span style="font-size:7.6px;font-weight:700;padding:0 5px;border-radius:8px;background:rgba(255,255,255,.22)">1</span><span style="display:flex;opacity:.8"><i data-lucide="x"></i></span></span>
+          <sc-for list="{{ searchFilters }}" as="f" hint-placeholder-count="8">
+            <span style="display:flex;align-items:center;gap:5px;font-size:8.7px;font-weight:600;padding:3px 10px;border-radius:16px;background:#fff;border:1px solid oklch(0.9 0.006 262);color:oklch(0.35 0.01 60);cursor:pointer"><span style="display:flex;color:oklch(0.5 0.01 60)"><i data-lucide="{{ f.icon }}"></i></span>{{ f.label }} <span style="font-size:6.5px;color:oklch(0.6 0.01 60)">▼</span></span>
+          </sc-for>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            <span style="display:flex;align-items:center;gap:5px;font-size:8.7px;font-weight:600;padding:3px 10px;border-radius:16px;background:#fff;border:1px solid oklch(0.9 0.006 262);color:oklch(0.35 0.01 60);cursor:pointer"><i data-lucide="arrow-up-down"></i>Best match <span style="font-size:6.5px;color:oklch(0.6 0.01 60)">▼</span></span>
+          </div>
+        </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:9.4px;background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:8.8px;padding:7.2px 10.4px;box-shadow:0 1px 2px rgba(22,24,42,.03);margin-top:4px">
+          <span style="font-size:9.5px;color:oklch(0.5 0.01 60)">Tick the roles you want, then drop them into your <b style="color:oklch(0.28 0.01 60);font-weight:700">Auto-Apply bucket</b>.</span>
+          <span onClick="{{ selectAllBucket }}" style="flex:none;display:flex;align-items:center;gap:3.9px;font-size:9px;font-weight:700;color:oklch(0.48 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265));cursor:pointer"><i data-lucide="check-check"></i>Select all</span>
+        </div>
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6.1px">
+            <sc-for list="{{ skel6 }}" as="n" hint-placeholder-count="6">
+              <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;padding:10.6px;display:flex;flex-direction:column;gap:6.2px">
+                <div style="display:flex;gap:6.2px;align-items:center"><div style="width:28px;height:28px;border-radius:6.2px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div><div style="flex:1;display:flex;flex-direction:column;gap:3.9px"><div style="height:9px;width:70%;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div><div style="height:7px;width:45%;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div></div></div>
+                <div style="height:8px;width:42%;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+                <div style="display:flex;gap:3.9px"><div style="height:24px;flex:1;border-radius:5.3px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div><div style="height:24px;flex:1;border-radius:5.3px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:35.2px 16px;text-align:center;background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px">
+            <div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.96 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;align-items:center;justify-content:center;color:oklch(0.55 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))"><i data-lucide="search-x"></i></div>
+            <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.25 0.01 60)">No matching jobs</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">Try adjusting your filters or search terms to see more roles.</div></div>
+            <button onClick="{{ resetData }}" style="padding:4px 8.6px;border-radius:7px;border:1px solid oklch(0.88 0.006 262);background:#fff;font-size:9.5px;font-weight:600;cursor:pointer">Clear filters</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:35.2px 16px;text-align:center;background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px">
+            <div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.96 0.03 25);display:flex;align-items:center;justify-content:center;color:oklch(0.6 0.18 25)"><i data-lucide="triangle-alert"></i></div>
+            <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.25 0.01 60)">Couldn't load jobs</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">Something went wrong while fetching roles. Please try again.</div></div>
+            <button onClick="{{ resetData }}" style="padding:4px 8.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Retry</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6.1px">
+          <sc-for list="{{ jobs }}" as="j" hint-placeholder-count="6">
+            <div style="background:#fff;border:1px solid {{ j.cardBorder }};border-radius:11px;box-shadow:{{ j.cardShadow }};padding:12px;display:flex;flex-direction:column;gap:8px;transition:transform .16s ease,box-shadow .16s ease" style-hover="transform:translateY(-3px)">
+              <div style="display:flex;align-items:flex-start;gap:8px">
+                <div onClick="{{ j.onDetail }}" style="flex:1;min-width:0;cursor:pointer">
+                  <div style="font-size:10.4px;font-weight:700;color:oklch(0.2 0.01 60);line-height:1.25">{{ j.title }}</div>
+                  <div style="font-size:8.6px;color:oklch(0.53 0.01 60);margin-top:1px">{{ j.company }} · {{ j.location }}</div>
+                </div>
+                <span style="font-size:8.4px;font-weight:700;padding:2.5px 7px;border-radius:12px;background:{{ j.scoreBg }};color:{{ j.scoreColor }};flex:none;white-space:nowrap">{{ j.matchScore }}%</span>
+              </div>
+              <div style="font-size:8.6px;color:oklch(0.5 0.01 60)">{{ j.salary }} · {{ j.type }}</div>
+              <div style="display:flex;gap:3px;flex-wrap:wrap">
+                <sc-for list="{{ j.tags }}" as="tag" hint-placeholder-count="3">
+                  <span style="font-size:7.6px;font-weight:600;padding:2.5px 6px;border-radius:5px;background:oklch(0.965 0.006 262);color:oklch(0.45 0.01 60)">{{ tag }}</span>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px;padding-top:9px;border-top:1px solid oklch(0.95 0.006 262)">
+                <div onClick="{{ j.onBucket }}" title="Add to Auto-Apply bucket" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <div style="width:15px;height:15px;border-radius:4.4px;border:1.5px solid {{ j.boxBorder }};background:{{ j.boxBg }};display:flex;align-items:center;justify-content:center;flex:none;color:#fff"><span style="display:{{ j.checkDisplay }};align-items:center"><i data-lucide="check"></i></span></div>
+                  <span style="font-size:8.2px;font-weight:600;color:oklch(0.5 0.01 60)">Auto-apply</span>
+                </div>
+                <button onClick="{{ j.onTailor }}" style="display:flex;align-items:center;gap:5px;padding:4.3px 8.6px;border-radius:8px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:8.8px;font-weight:700;cursor:pointer;box-shadow:0 4px 11px -5px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 50%)"><i data-lucide="zap"></i>Quick Apply</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTailor }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:9.4px;max-width:1180px;animation:pw-enter .3s ease both">
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12.5px">
+          <div style="display:flex;align-items:center;gap:9.4px;min-width:0">
+            <a href="#" onClick="{{ goToJobs }}" title="Back to job search" style="width:30px;height:30px;border-radius:7px;border:1px solid oklch(0.9 0.006 262);background:#fff;display:flex;align-items:center;justify-content:center;color:oklch(0.42 0.01 60);flex:none"><i data-lucide="arrow-left"></i></a>
+            <div style="width:40px;height:40px;border-radius:9.7px;background:{{ selectedJob.logoBg }};flex:none"></div>
+            <div style="min-width:0">
+              <div style="font-size:8.1px;font-weight:700;letter-spacing:.09em;color:oklch(0.6 0.01 60);margin-bottom:2px">TAILOR & APPLY</div>
+              <h1 style="margin:0;font-size:15.3px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">{{ selectedJob.title }}</h1>
+              <p style="margin:2px 0 0;font-size:9.5px;color:oklch(0.5 0.01 60)">{{ selectedJob.company }} · {{ selectedJob.location }}</p>
+            </div>
+          </div>
+          <div style="flex:none;display:flex;align-items:center;gap:6.2px">
+            <span style="font-size:9px;font-weight:700;padding:4px 8.8px;border-radius:12.3px;background:{{ selectedJob.scoreBg }};color:{{ selectedJob.scoreColor }}">{{ selectedJob.matchScore }}% match</span>
+            <button style="height:32px;padding:0 6.9px;border-radius:7px;border:1px solid oklch(0.88 0.006 262);background:#fff;font-size:9.5px;font-weight:600;cursor:pointer">Save draft</button>
+            <button style="height:32px;padding:0 8.1px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:3.9px;box-shadow:0 6px 16px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)"><i data-lucide="check"></i>Approve & Submit</button>
+          </div>
+        </div>
+
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:320px 1fr;gap:9.4px;align-items:start">
+            <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;padding:9.6px;display:flex;flex-direction:column;gap:6.2px">
+              <sc-for list="{{ skel4 }}" as="n" hint-placeholder-count="4"><div style="height:62px;border-radius:8.8px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div></sc-for>
+            </div>
+            <div style="background:oklch(0.948 0.006 258);border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;padding:17.6px;display:flex;justify-content:center"><div style="width:100%;max-width:660px;aspect-ratio:210/297;border-radius:2.6px;background:linear-gradient(90deg,oklch(0.94 0.006 262) 25%,oklch(0.975 0.004 262) 37%,oklch(0.94 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:320px 1fr;gap:9.4px;align-items:stretch">
+            <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px">
+              <div style="width:46px;height:46px;border-radius:12.3px;background:oklch(0.95 0.05 145);display:flex;align-items:center;justify-content:center;color:oklch(0.45 0.13 145)"><i data-lucide="circle-check"></i></div>
+              <div><div style="font-size:11.3px;font-weight:700;color:oklch(0.25 0.01 60)">Your resume already fits</div><div style="font-size:9px;color:oklch(0.55 0.01 60);margin-top:3px;line-height:1.45">No tailoring was needed for this role — you can submit as-is.</div></div>
+              <button onClick="{{ goToJobs }}" style="padding:4.6px 9.2px;border-radius:7px;border:1px solid oklch(0.88 0.006 262);background:#fff;font-size:9.5px;font-weight:600;cursor:pointer">Back to jobs</button>
+            </div>
+            <div style="background:oklch(0.948 0.006 258);border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;padding:17.6px;display:flex;justify-content:center"><div style="width:100%;max-width:660px;aspect-ratio:210/297;border:1.5px dashed oklch(0.85 0.01 262);border-radius:2.6px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:oklch(0.6 0.01 60)">Nothing to preview</span></div></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:320px 1fr;gap:9.4px;align-items:stretch">
+            <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:7px">
+              <div style="width:46px;height:46px;border-radius:12.3px;background:oklch(0.96 0.03 25);display:flex;align-items:center;justify-content:center;color:oklch(0.6 0.18 25)"><i data-lucide="triangle-alert"></i></div>
+              <div><div style="font-size:11.3px;font-weight:700;color:oklch(0.25 0.01 60)">Couldn't tailor your resume</div><div style="font-size:9px;color:oklch(0.55 0.01 60);margin-top:3px;line-height:1.45">The AI hit a problem generating changes for this role. Please try again.</div></div>
+              <button onClick="{{ resetData }}" style="padding:4.6px 9.2px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Retry</button>
+            </div>
+            <div style="background:oklch(0.948 0.006 258);border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;padding:17.6px;display:flex;justify-content:center"><div style="width:100%;max-width:660px;aspect-ratio:210/297;border:1.5px dashed oklch(0.85 0.01 262);border-radius:2.6px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:oklch(0.6 0.01 60)">Preview unavailable</span></div></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:9.4px;align-items:start">
+
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:9.6px 10.4px;border-bottom:1px solid oklch(0.935 0.006 262)">
+              <div style="display:flex;align-items:center;gap:4.7px"><span style="color:oklch(0.5 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265));display:flex"><i data-lucide="sparkles"></i></span><h3 style="margin:0;font-size:11.3px;font-weight:700">Changes for this role</h3></div>
+              <span style="font-size:8.1px;font-weight:700;padding:2px 6.4px;border-radius:8.8px;background:oklch(0.965 0.02 var(--pw-hue,265));color:oklch(0.48 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))">5</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6.2px;padding:8.8px;max-height:520px;overflow-y:auto">
+              <sc-for list="{{ tailorChanges }}" as="c" hint-placeholder-count="5">
+                <div style="padding:8px 8.8px;border:1px solid oklch(0.935 0.006 262);border-radius:8.8px;display:flex;flex-direction:column;gap:4.7px;transition:border-color .12s ease" style-hover="border-color:oklch(0.86 0.02 var(--pw-hue,265))">
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:6.8px;font-weight:700;letter-spacing:.06em;padding:2px 6.4px;border-radius:8.8px;background:{{ c.tagBg }};color:{{ c.tagColor }}">{{ c.tag }}</span>
+                    <div style="display:flex;gap:3.1px">
+                      <span title="Keep" style="width:23px;height:23px;border-radius:6.2px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:oklch(0.95 0.05 145);color:oklch(0.42 0.13 145)"><i data-lucide="check"></i></span>
+                      <span title="Revert" style="width:23px;height:23px;border-radius:6.2px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;background:oklch(0.955 0.006 262);color:oklch(0.5 0.01 60)"><i data-lucide="x"></i></span>
+                    </div>
+                  </div>
+                  <span style="font-size:9px;color:oklch(0.28 0.01 60);line-height:1.45">{{ c.text }}</span>
+                  <span style="font-size:7.7px;color:oklch(0.55 0.01 60);line-height:1.4">{{ c.reason }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7.2px 10.4px;border-bottom:1px solid oklch(0.935 0.006 262);background:oklch(0.989 0.003 258)">
+              <span style="font-size:9.9px;font-weight:700;color:oklch(0.25 0.01 60)">Tailored preview</span>
+              <div style="display:flex;align-items:center;gap:9.4px">
+                <span style="display:flex;align-items:center;gap:3.1px;font-size:7.7px;color:oklch(0.5 0.01 60)"><span style="width:8px;height:8px;border-radius:2px;background:oklch(0.6 0.14 145)"></span>Added</span>
+                <span style="display:flex;align-items:center;gap:3.1px;font-size:7.7px;color:oklch(0.5 0.01 60)"><span style="width:8px;height:8px;border-radius:2px;background:oklch(0.65 0.14 25)"></span>Removed</span>
+              </div>
+            </div>
+            <div style="background:oklch(0.948 0.006 258);padding:17.6px 14.4px;overflow:visible;display:flex;flex-direction:column;align-items:center;gap:7.8px">
+              <div style="width:100%;max-width:660px;aspect-ratio:210/297;background:#fff;box-shadow:0 8px 30px -10px rgba(22,24,42,.28);border-radius:2.6px;padding:30.4px 35.2px;display:flex;flex-direction:column;gap:8.6px">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:7.8px">
+                  <div><div style="font-size:19.8px;font-weight:800;color:oklch(0.15 0.01 60);letter-spacing:-.01em;white-space:nowrap">Jordan Reyes</div><div style="font-size:9.5px;color:oklch(0.45 0.01 60);margin-top:2px">Senior Product Designer</div></div>
+                  <div style="text-align:right;font-size:7.7px;color:oklch(0.5 0.01 60);line-height:1.8"><div>jordanreyes.design</div><div>jordan.reyes@mail.com</div><div>+1 415 555 0148</div></div>
+                </div>
+                <div style="border-left:2px solid oklch(0.6 0.14 145);background:oklch(0.97 0.04 145);border-radius:0 5.3px 5.3px 0;padding:6.4px 8.8px;font-size:8.7px;line-height:1.6;color:oklch(0.32 0.05 145)">Product designer with six years of experience leading systems-thinking and 0-to-1 launches for B2B SaaS, shipping intuitive high-craft experiences with product and engineering.</div>
+                <div style="display:flex;flex-direction:column;gap:7px;margin-top:2px">
+                  <sc-for list="{{ previewExp }}" as="x" hint-placeholder-count="2">
+                    <div>
+                      <div style="font-size:6.8px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em">{{ x.dates }}</div>
+                      <div style="font-size:9.5px;font-weight:700;color:oklch(0.2 0.01 60);margin-top:1px">{{ x.title }}</div>
+                      <div style="display:flex;flex-direction:column;gap:2.3px;margin-top:4px">
+                        <sc-for list="{{ x.bullets }}" as="b" hint-placeholder-count="3">
+                          <div style="display:flex;gap:4.7px;font-size:7.9px;line-height:1.5;padding:2px 4.8px;border-radius:4.4px;background:{{ b.bg }}"><span style="color:oklch(0.6 0.01 60)">•</span><span style="color:{{ b.color }};text-decoration:{{ b.strike }}">{{ b.text }}</span></div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top:2px">
+                  <div style="font-size:11.7px;font-weight:700;color:oklch(0.2 0.01 60);margin-bottom:5px">Skills</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3.9px">
+                    <sc-for list="{{ previewSkills }}" as="s" hint-placeholder-count="6"><span style="font-size:7.9px;font-weight:600;padding:2.4px 7.2px;border-radius:10.6px;background:{{ s.bg }};color:{{ s.color }}">{{ s.t }}</span></sc-for>
+                  </div>
+                </div>
+              </div>
+              <span style="font-size:7.7px;font-weight:600;color:oklch(0.55 0.01 60)">Page 1 of 1 · A4 · tailored for {{ selectedJob.company }}</span>
+            </div>
+          </div>
+
+        </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isApplications }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:7.5px;max-width:1180px;animation:pw-enter .3s ease both">
+        <div>
+          <div style="font-size:8.1px;font-weight:700;letter-spacing:.09em;color:oklch(0.6 0.01 60);margin-bottom:5px">TRACKER</div>
+          <h1 style="margin:0;font-size:18px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">Applications</h1>
+          <p style="margin:5px 0 0;font-size:10.8px;color:oklch(0.5 0.01 60)">Every application submitted on your behalf, tracked in one place.</p>
+        </div>
+        <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.8px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);overflow:hidden">
+          <div style="display:grid;grid-template-columns:2fr 1.3fr 0.9fr 0.9fr 0.9fr;padding:7px 11.3px;background:oklch(0.982 0.004 258);border-bottom:1px solid oklch(0.915 0.006 262)">
+            <span style="font-size:7.6px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em">ROLE</span>
+            <span style="font-size:7.6px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em">APPLIED</span>
+            <span style="font-size:7.6px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em">MATCH</span>
+            <span style="font-size:7.6px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em">STATUS</span>
+            <span style="font-size:7.6px;font-weight:700;color:oklch(0.55 0.01 60);letter-spacing:.04em">RECEIPT</span>
+          </div>
+          <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{ skelRows }}" as="n" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:2fr 1.3fr 0.9fr 0.9fr 0.9fr;padding:7.8px 11.3px;align-items:center;border-bottom:1px solid oklch(0.945 0.006 262);transition:background .12s ease" style-hover="background:oklch(0.982 0.004 258)">
+                <div style="display:flex;align-items:center;gap:4.7px"><div style="width:22.9px;height:22.9px;border-radius:5.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div><div style="display:flex;flex-direction:column;gap:3.1px"><div style="height:8px;width:120px;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div><div style="height:6px;width:70px;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div></div></div>
+                <div style="height:8px;width:50px;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+                <div style="height:8px;width:34px;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+                <div style="height:16px;width:56px;border-radius:12.3px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+                <div style="height:8px;width:40px;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:35.2px 16px;text-align:center">
+              <div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.96 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;align-items:center;justify-content:center;color:oklch(0.55 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))"><i data-lucide="inbox"></i></div>
+              <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.25 0.01 60)">No applications yet</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">Apply to a job and it'll show up here with its status and receipt.</div></div>
+              <button onClick="{{ goToJobs }}" style="padding:4px 8.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Browse jobs</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:35.2px 16px;text-align:center">
+              <div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.96 0.03 25);display:flex;align-items:center;justify-content:center;color:oklch(0.6 0.18 25)"><i data-lucide="triangle-alert"></i></div>
+              <div><div style="font-size:11.7px;font-weight:700;color:oklch(0.25 0.01 60)">Couldn't load applications</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">We hit a problem syncing your applications. Please try again.</div></div>
+              <button onClick="{{ resetData }}" style="padding:4px 8.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Retry</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ applications }}" as="a" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:2fr 1.3fr 0.9fr 0.9fr 0.9fr;padding:7.8px 11.3px;align-items:center;border-bottom:1px solid oklch(0.945 0.006 262);transition:background .12s ease" style-hover="background:oklch(0.982 0.004 258)">
+              <div style="display:flex;align-items:center;gap:4.7px;min-width:0">
+                <div style="width:22.9px;height:22.9px;border-radius:5.5px;background:{{ a.logoBg }};flex:none"></div>
+                <div style="min-width:0">
+                  <div style="font-size:9.1px;font-weight:600;color:oklch(0.22 0.01 60)">{{ a.role }}</div>
+                  <div style="font-size:7.9px;color:oklch(0.55 0.01 60)">{{ a.company }}</div>
+                </div>
+              </div>
+              <span style="font-size:8.7px;color:oklch(0.4 0.01 60)">{{ a.date }}</span>
+              <span style="font-size:8.7px;font-weight:600;color:{{ a.matchColor }}">{{ a.matchScore }}%</span>
+              <span style="font-size:7.9px;font-weight:600;padding:2.1px 5.6px;border-radius:12.4px;background:{{ a.statusBg }};color:{{ a.statusColor }};width:fit-content">{{ a.status }}</span>
+              <a href="#" style="font-size:8.7px;font-weight:600">View →</a>
+            </div>
+          </sc-for>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAutoApply }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:9.4px;max-width:1180px;animation:pw-enter .3s ease both">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12.5px">
+          <div>
+            <div style="font-size:8.1px;font-weight:700;letter-spacing:.09em;color:oklch(0.6 0.01 60);margin-bottom:5px">AUTOMATION</div>
+            <h1 style="margin:0;font-size:18px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">Auto-Apply Queue</h1>
+            <p style="margin:5px 0 0;font-size:10.8px;color:oklch(0.5 0.01 60)">Pathway tailors and applies to matched roles — with your approval on every submission.</p>
+          </div>
+          <div style="flex:none;display:flex;align-items:center;gap:7.8px">
+            <span style="font-size:9.9px;font-weight:600;color:oklch(0.35 0.01 60)">Auto-apply</span>
+            <div onClick="{{ toggleAuto }}" style="width:38px;height:22px;border-radius:17.6px;background:{{ autoTrack }};position:relative;cursor:pointer;transition:background .15s;flex:none"><div style="position:absolute;top:2px;left:{{ autoKnob }};width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s"></div></div>
+            <div title="Settings" style="width:30px;height:30px;border-radius:7px;border:1px solid oklch(0.9 0.006 262);background:#fff;display:flex;align-items:center;justify-content:center;color:oklch(0.42 0.01 60);cursor:pointer" style-hover="background:oklch(0.965 0.01 var(--pw-hue,265))"><i data-lucide="settings"></i></div>
+          </div>
+        </div>
+
+        <div style="background:linear-gradient(120deg,oklch(0.965 0.028 var(--pw-hue,265)),oklch(0.985 0.01 258));border:1px solid oklch(0.9 calc(0.045*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:12.3px;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11.2px 14.4px">
+            <div style="display:flex;align-items:center;gap:9.4px;min-width:0">
+              <span style="width:36px;height:36px;border-radius:8.8px;background:linear-gradient(135deg,oklch(calc(0.7 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.58 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));display:flex;align-items:center;justify-content:center;color:#fff;flex:none;box-shadow:0 6px 14px -5px oklch(0.66 calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 50%)"><i data-lucide="zap"></i></span>
+              <div><div style="font-size:11.3px;font-weight:700;color:oklch(0.25 0.01 60)">Auto-apply is active</div><div style="font-size:9px;color:oklch(0.5 0.01 60);margin-top:1px;line-height:1.45">Roles above 85% match are tailored and submitted automatically. Everything else waits for your review.</div></div>
+            </div>
+            <div style="flex:none;display:flex;align-items:center;gap:10.9px">
+              <div style="width:170px;display:flex;flex-direction:column;gap:3.9px">
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:8.6px;font-weight:600;color:oklch(0.5 0.01 60)">Free applications</span><span style="font-size:8.6px;font-weight:700;color:oklch(0.28 0.01 60)">12 / 25</span></div>
+                <div style="height:6px;border-radius:17.6px;background:oklch(0.92 0.008 262);overflow:hidden"><div style="height:100%;width:48%;border-radius:17.6px;background:linear-gradient(90deg,oklch(0.7 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))"></div></div>
+              </div>
+              <button style="padding:5.2px 8.1px;border-radius:7.9px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:3.9px;white-space:nowrap"><i data-lucide="rocket"></i>Upgrade</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid oklch(0.9 calc(0.04*var(--pw-cmul,1)) var(--pw-hue,265));background:rgba(255,255,255,.45)">
+            <sc-for list="{{ autoStats }}" as="s" hint-placeholder-count="4">
+              <div style="padding:8.8px 12.8px;border-left:1px solid oklch(0.92 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;flex-direction:column;gap:2.3px">
+                <div style="display:flex;align-items:center;gap:4.7px"><span style="color:oklch(0.55 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265));display:flex"><i data-lucide="{{ s.icon }}"></i></span><span style="font-size:7.2px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60)">{{ s.label }}</span></div>
+                <div style="display:flex;align-items:baseline;gap:4.7px"><span style="font-size:18px;font-weight:700;color:oklch(0.18 0.01 60)">{{ s.value }}</span><span style="font-size:7.7px;color:oklch(0.55 0.01 60)">{{ s.foot }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:10.6px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12);overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:9.6px 12px;border-bottom:1px solid oklch(0.935 0.006 262)">
+            <div style="display:flex;align-items:center;gap:7.8px">
+              <div onClick="{{ autoSelectAll }}" title="Select all" style="width:16px;height:16px;border-radius:4.4px;border:1.5px solid {{ autoSelAllBorder }};background:{{ autoSelAllBg }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;color:#fff"><span style="display:{{ autoSelAllCheck }};align-items:center"><i data-lucide="check"></i></span></div>
+              <h3 style="margin:0;font-size:11.7px;font-weight:700">Application queue</h3><span style="font-size:7.7px;font-weight:700;padding:2px 6.4px;border-radius:8.8px;background:oklch(0.965 0.02 var(--pw-hue,265));color:oklch(0.48 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))">8</span>
+              <sc-if value="{{ autoHasSel }}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;font-weight:600;color:oklch(0.5 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))">{{ autoSelCount }} selected</span></sc-if>
+            </div>
+            <div style="display:flex;align-items:center;gap:6.2px">
+              <sc-if value="{{ autoHasSel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ autoApplySelected }}" style="display:flex;align-items:center;gap:3.9px;padding:3.5px 7.5px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9px;font-weight:700;cursor:pointer;box-shadow:0 5px 14px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)"><i data-lucide="check-check"></i>Apply {{ autoSelCount }} selected</button></sc-if>
+              <span style="display:flex;align-items:center;gap:3.9px;font-size:9px;font-weight:600;color:oklch(0.5 0.01 60);cursor:pointer"><i data-lucide="sliders-horizontal"></i>Filter</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:auto 2.3fr 0.7fr 1fr 0.9fr 0.9fr;gap:7.8px;padding:6.4px 12px;background:oklch(0.982 0.004 258);border-bottom:1px solid oklch(0.935 0.006 262)">
+            <span style="width:16px"></span>
+            <span style="font-size:7.2px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60)">ROLE</span>
+            <span style="font-size:7.2px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60)">MATCH</span>
+            <span style="font-size:7.2px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60)">STATUS</span>
+            <span style="font-size:7.2px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60)">TIMING</span>
+            <span style="font-size:7.2px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60);text-align:right">ACTIONS</span>
+          </div>
+          <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{ skelRows }}" as="n" hint-placeholder-count="5"><div style="display:grid;grid-template-columns:auto 2.3fr 0.7fr 1fr 0.9fr 0.9fr;padding:8.8px 12px;align-items:center;gap:7.8px;border-bottom:1px solid oklch(0.95 0.006 262)"><div style="width:16px;height:16px;border-radius:4.4px;border:1.5px solid oklch(0.88 0.008 262)"></div><div style="display:flex;gap:6.2px;align-items:center"><div style="width:26px;height:26px;border-radius:6.2px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div><div style="height:9px;width:120px;border-radius:3.5px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div></div><div></div><div style="height:16px;width:70px;border-radius:12.3px;background:linear-gradient(90deg,oklch(0.93 0.006 262) 25%,oklch(0.965 0.004 262) 37%,oklch(0.93 0.006 262) 63%);background-size:400% 100%;animation:pw-shimmer 1.4s ease infinite"></div><div></div><div></div></div></sc-for>
+          </sc-if>
+          <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:38.4px 16px;text-align:center"><div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.965 0.02 var(--pw-hue,265));display:flex;align-items:center;justify-content:center;color:oklch(0.5 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))"><i data-lucide="inbox"></i></div><div><div style="font-size:11.3px;font-weight:700;color:oklch(0.25 0.01 60)">Your queue is empty</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">Turn on auto-apply or add roles from Job Search to fill your queue.</div></div><button onClick="{{ goToJobs }}" style="padding:4px 8.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Find jobs</button></div>
+          </sc-if>
+          <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:38.4px 16px;text-align:center"><div style="width:44px;height:44px;border-radius:11.4px;background:oklch(0.96 0.03 25);display:flex;align-items:center;justify-content:center;color:oklch(0.6 0.18 25)"><i data-lucide="triangle-alert"></i></div><div><div style="font-size:11.3px;font-weight:700;color:oklch(0.25 0.01 60)">Couldn't load your queue</div><div style="font-size:9.5px;color:oklch(0.55 0.01 60);margin-top:3px;max-width:300px">We hit a problem syncing the auto-apply queue. Please try again.</div></div><button onClick="{{ resetData }}" style="padding:4px 8.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer">Retry</button></div>
+          </sc-if>
+          <sc-if value="{{ isReady }}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{ autoQueue }}" as="r" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:auto 2.3fr 0.7fr 1fr 0.9fr 0.9fr;padding:8.8px 12px;align-items:center;gap:7.8px;border-bottom:1px solid oklch(0.95 0.006 262);background:{{ r.rowBg }};transition:background .12s ease" style-hover="background:oklch(0.982 0.004 258)">
+              <div onClick="{{ r.onToggle }}" style="width:16px;height:16px;border-radius:4.4px;border:1.5px solid {{ r.boxBorder }};background:{{ r.boxBg }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;color:#fff"><span style="display:{{ r.checkDisplay }};align-items:center"><i data-lucide="check"></i></span></div>
+              <div style="display:flex;align-items:center;gap:7.8px;min-width:0"><div style="width:28px;height:28px;border-radius:7px;background:{{ r.logoBg }};flex:none"></div><div style="min-width:0"><div style="font-size:9.9px;font-weight:600;color:oklch(0.22 0.01 60)">{{ r.role }}</div><div style="font-size:8.6px;color:oklch(0.55 0.01 60)">{{ r.company }}</div></div></div>
+              <span style="font-size:9.9px;font-weight:700;color:oklch(0.35 0.01 60)">{{ r.match }}%</span>
+              <span style="font-size:8.1px;font-weight:600;padding:2.4px 7.2px;border-radius:10.6px;background:{{ r.sBg }};color:{{ r.sColor }};width:fit-content">{{ r.status }}</span>
+              <span style="font-size:8.6px;color:oklch(0.55 0.01 60)">{{ r.time }}</span>
+              <div style="display:flex;align-items:center;justify-content:flex-end;gap:3.9px">
+                <sc-if value="{{ r.review }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ goToJobs }}" style="display:flex;align-items:center;gap:3.1px;padding:2.9px 5.8px;border-radius:6.2px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:8.6px;font-weight:700;cursor:pointer"><i data-lucide="eye"></i>Review</button>
+                </sc-if>
+                <span title="Remove from queue" style="width:26px;height:26px;border-radius:6.2px;border:1px solid oklch(0.9 0.006 262);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.5 0.01 60)"><i data-lucide="x"></i></span>
+              </div>
+            </div>
+          </sc-for>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:11px;max-width:1180px;animation:pw-enter .3s ease both">
+        <div>
+          <div style="font-size:8.1px;font-weight:700;letter-spacing:.09em;color:oklch(0.6 0.01 60);margin-bottom:5px">ACCOUNT</div>
+          <h1 style="margin:0;font-size:18px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">Settings</h1>
+          <p style="margin:5px 0 0;font-size:10.8px;color:oklch(0.5 0.01 60)">Manage your profile, preferences and notifications.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;align-items:start">
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:11px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 8.5px 19.7px -11.3px rgba(22,24,42,.12);padding:14px;display:flex;flex-direction:column;gap:11px;grid-column:1 / -1">
+            <div style="display:flex;align-items:center;justify-content:space-between"><div><h3 style="margin:0;font-size:12px;font-weight:700">Appearance</h3><span style="font-size:9.2px;color:oklch(0.55 0.01 60)">Choose your accent theme</span></div></div>
+            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+              <sc-for list="{{ themeSwatches }}" as="sw" hint-placeholder-count="8">
+                <div onClick="{{ sw.onClick }}" title="{{ sw.name }}" style="width:26px;height:26px;border-radius:50%;background:{{ sw.color }};cursor:pointer;box-shadow:{{ sw.ring }}"></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:11px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 8.5px 19.7px -11.3px rgba(22,24,42,.12);padding:14px;display:flex;flex-direction:column;gap:9px">
+            <h3 style="margin:0;font-size:12px;font-weight:700">Job preferences</h3>
+            <sc-for list="{{ onboardingFields }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid oklch(0.95 0.006 262)">
+                <div style="min-width:0"><div style="font-size:7.6px;font-weight:700;letter-spacing:.04em;color:oklch(0.55 0.01 60)">{{ f.label }}</div><div style="font-size:10px;font-weight:600;color:oklch(0.25 0.01 60);margin-top:2px">{{ f.value }}</div></div>
+                <span style="font-size:9.5px;font-weight:600;color:oklch(0.5 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265));cursor:pointer;flex:none">Edit</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:11px">
+            <div style="background:#fff;border:1px solid oklch(0.925 0.006 262);border-radius:11px;box-shadow:0 1px 2px rgba(22,24,42,.03),0 8.5px 19.7px -11.3px rgba(22,24,42,.12);padding:14px;display:flex;flex-direction:column;gap:10px">
+              <h3 style="margin:0;font-size:12px;font-weight:700">Notifications</h3>
+              <sc-for list="{{ settingsNotif }}" as="t" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                  <span style="font-size:10.5px;color:oklch(0.3 0.01 60)">{{ t.label }}</span>
+                  <div style="width:34px;height:20px;border-radius:20px;background:{{ t.track }};position:relative;cursor:pointer;flex:none"><div style="position:absolute;top:2px;left:{{ t.knob }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)"></div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:linear-gradient(120deg,oklch(0.965 0.028 var(--pw-hue,265)),oklch(0.985 0.01 258));border:1px solid oklch(0.9 calc(0.045*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:11px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <div><div style="font-size:11.5px;font-weight:700;color:oklch(0.25 0.01 60)">Free plan</div><div style="font-size:9.5px;color:oklch(0.5 0.01 60);margin-top:1px">25 free applications / day</div></div>
+              <button style="display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:9px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap"><i data-lucide="rocket"></i>Upgrade</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <sc-if value="{{ showUploadModal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeUpload }}" style="position:fixed;inset:0;background:rgba(20,12,4,.35);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:50">
+      <div onClick="{{ stopProp }}" style="width:369.6px;max-width:90%;background:#fff;border-radius:12.4px;box-shadow:0 21.1px 52.8px -17.6px rgba(20,12,4,.4);padding:16.9px;display:flex;flex-direction:column;gap:7.5px;animation:pw-pop .22s ease both">
+        <sc-if value="{{ isAsking }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <h3 style="margin:0;font-size:11.9px;font-weight:700;color:oklch(0.2 0.01 60)">Upload your resume</h3>
+            <span onClick="{{ closeUpload }}" style="font-size:12.7px;color:oklch(0.55 0.01 60);cursor:pointer;line-height:1">×</span>
+          </div>
+          <div onClick="{{ startProcessing }}" style="border:1.5px dashed oklch(0.8 calc(0.06*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:10px;background:oklch(0.98 calc(0.012*var(--pw-cmul,1)) var(--pw-hue,265));padding:22.6px 14.1px;display:flex;flex-direction:column;align-items:center;gap:5.6px;cursor:pointer" style-hover="background:oklch(0.965 calc(0.025*var(--pw-cmul,1)) var(--pw-hue,265))">
+            <div style="width:40.5px;height:40.5px;border-radius:9.3px;background:oklch(0.95 calc(0.04*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;align-items:center;justify-content:center;position:relative">
+              <div style="width:14.1px;height:2.2px;background:oklch(0.6 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:2px;position:absolute"></div>
+              <div style="width:2.2px;height:14.1px;background:oklch(0.6 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265));border-radius:2px;position:absolute"></div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:9.9px;font-weight:700;color:oklch(0.3 0.01 60)">Drag & drop or click to browse</div>
+              <div style="font-size:8.3px;color:oklch(0.55 0.01 60);margin-top:2.6px">PDF or DOCX · up to 5MB</div>
+            </div>
+          </div>
+          <button onClick="{{ startProcessing }}" style="padding:5.6px;border-radius:7px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.9px;font-weight:700;cursor:pointer;box-shadow:0 5.3px 14.1px -5.3px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 50%)">Choose file</button>
+        </sc-if>
+        <sc-if value="{{ isProcessing }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7.5px;padding:9.8px 0">
+            <div style="width:40.5px;height:40.5px;border-radius:50%;border:2.6px solid oklch(0.92 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265));border-top-color:oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265));animation:pw-spin 0.8s linear infinite"></div>
+            <div style="text-align:center">
+              <div style="font-size:10.7px;font-weight:700;color:oklch(0.2 0.01 60)">Parsing your resume…</div>
+              <div style="font-size:8.7px;color:oklch(0.55 0.01 60);margin-top:3.5px">Extracting experience, skills and education with AI.</div>
+            </div>
+            <div style="width:100%;background:oklch(0.935 0.006 262);border-radius:15.5px;height:5.3px;overflow:hidden">
+              <div style="height:100%;width:70%;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));border-radius:15.5px;animation:pw-fill 1.6s ease-out forwards"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:3.7px;font-size:8.7px;color:oklch(0.5 0.01 60)"><span style="color:oklch(0.5 0.13 145);font-weight:700">✓</span> jordan_reyes_resume.pdf</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeNotif }}" style="position:fixed;inset:0;z-index:55"></div>
+    <div style="position:fixed;right:16px;top:56px;z-index:56;width:300px;background:#fff;border:1px solid oklch(0.92 0.008 262);border-radius:12.3px;box-shadow:0 22px 54px -18px rgba(22,24,42,.32);overflow:hidden;animation:pw-pop .2s ease both">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10.4px 12px;border-bottom:1px solid oklch(0.945 0.006 262)">
+        <span style="font-size:11.7px;font-weight:700;color:oklch(0.2 0.01 60)">Notifications</span>
+        <span onClick="{{ closeNotif }}" style="font-size:9.5px;font-weight:600;color:oklch(0.55 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265));cursor:pointer">Mark all read</span>
+      </div>
+      <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="4">
+        <div style="display:flex;gap:7.8px;align-items:flex-start;padding:8.8px 12px;border-bottom:1px solid oklch(0.955 0.005 262);cursor:pointer" style-hover="background:oklch(0.98 0.004 258)">
+          <span style="width:28px;height:28px;border-radius:7.9px;background:oklch(0.965 calc(0.02*var(--pw-cmul,1)) var(--pw-hue,265));display:flex;align-items:center;justify-content:center;flex:none;color:{{ n.color }}"><i data-lucide="{{ n.icon }}"></i></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:9.9px;line-height:1.4;color:oklch(0.28 0.01 60)">{{ n.text }}</div>
+            <div style="font-size:8.1px;color:oklch(0.58 0.01 60);margin-top:2px">{{ n.time }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showJobDetail }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeJobDetail }}" style="position:fixed;inset:0;background:rgba(20,12,4,.35);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:52;padding:20px">
+      <div onClick="{{ stopProp }}" style="width:520px;max-width:94%;max-height:86vh;overflow-y:auto;background:#fff;border-radius:16px;box-shadow:0 24px 60px -20px rgba(20,12,4,.4);animation:pw-pop .2s ease both">
+        <div style="padding:18px 20px;border-bottom:1px solid oklch(0.94 0.006 262);display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+          <div style="min-width:0">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:.06em;color:oklch(0.55 0.01 60);margin-bottom:4px">{{ jobDetail.company }} · {{ jobDetail.location }}</div>
+            <h2 style="margin:0;font-size:17px;font-weight:700;color:oklch(0.18 0.01 60);letter-spacing:-.01em">{{ jobDetail.title }}</h2>
+            <p style="margin:4px 0 0;font-size:11px;color:oklch(0.5 0.01 60)">{{ jobDetail.salary }} · {{ jobDetail.type }}</p>
+          </div>
+          <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <span style="font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:14px;background:{{ jobDetail.scoreBg }};color:{{ jobDetail.scoreColor }}">{{ jobDetail.matchScore }}% match</span>
+            <span onClick="{{ closeJobDetail }}" title="Close" style="width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:oklch(0.5 0.01 60)" style-hover="background:oklch(0.96 0.006 262)"><i data-lucide="x"></i></span>
+          </div>
+        </div>
+        <div style="padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:.05em;color:oklch(0.55 0.01 60);margin-bottom:6px">ABOUT THE ROLE</div>
+            <p style="margin:0;font-size:11.5px;line-height:1.6;color:oklch(0.35 0.01 60)">{{ jobDetail.description }}</p>
+          </div>
+          <div>
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:.05em;color:oklch(0.55 0.01 60);margin-bottom:6px">KEY REQUIREMENTS</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ jobDetail.requirements }}" as="r" hint-placeholder-count="4">
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:oklch(0.55 0.13 145);flex:none;display:flex;margin-top:1px"><i data-lucide="check"></i></span><span style="font-size:11px;color:oklch(0.38 0.01 60);line-height:1.45">{{ r }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="padding:14px 20px;border-top:1px solid oklch(0.94 0.006 262);display:flex;gap:10px;justify-content:flex-end">
+          <button onClick="{{ closeJobDetail }}" style="padding:6.5px 11.5px;border-radius:9px;border:1px solid oklch(0.88 0.006 262);background:#fff;font-size:11px;font-weight:600;cursor:pointer">Close</button>
+          <button onClick="{{ quickApplyDetail }}" style="display:flex;align-items:center;gap:6px;padding:6.5px 13px;border-radius:9px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 6px 16px -6px oklch(calc(0.66 - var(--pw-dark,0)) calc(0.19*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)"><i data-lucide="zap"></i>Quick Apply</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ bucketHas }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:0;right:0;bottom:64px;z-index:58;display:flex;justify-content:center;pointer-events:none">
+      <div style="display:flex;align-items:center;gap:10.9px;background:oklch(0.16 0.01 60);border-radius:12.3px;padding:8px 9.6px 8px 12px;box-shadow:0 18px 44px -14px rgba(0,0,0,.5);animation:pw-pop .2s ease both;pointer-events:auto">
+      <span style="width:30px;height:30px;border-radius:7.9px;background:linear-gradient(135deg,oklch(0.68 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));display:flex;align-items:center;justify-content:center;color:#fff;flex:none"><i data-lucide="layers"></i></span>
+      <div style="line-height:1.2"><div style="font-size:10.4px;font-weight:700;color:#fff">{{ bucketCount }} in Auto-Apply bucket</div><div style="font-size:8.1px;color:oklch(0.7 0.01 60)">Ready to queue for auto-apply</div></div>
+      <div style="display:flex;align-items:center">
+        <sc-for list="{{ bucketJobs }}" as="bj" hint-placeholder-count="3"><div style="width:22px;height:22px;border-radius:5.3px;background:{{ bj.logoBg }};border:2px solid oklch(0.16 0.01 60);margin-left:-6px"></div></sc-for>
+      </div>
+      <span onClick="{{ clearBucket }}" style="font-size:9px;font-weight:600;color:oklch(0.7 0.01 60);cursor:pointer;padding:0 3.2px">Clear</span>
+      <button onClick="{{ moveBucket }}" style="display:flex;align-items:center;gap:3.9px;padding:5.2px 8.1px;border-radius:7.9px;border:none;background:linear-gradient(135deg,oklch(calc(0.71 - var(--pw-dark,0)) calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(calc(0.6 - var(--pw-dark,0)) calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)));color:#fff;font-size:9.5px;font-weight:700;cursor:pointer;white-space:nowrap">Move to Auto-Apply<i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position:fixed;left:62px;bottom:16px;z-index:60;display:flex;align-items:center;gap:3.1px;background:#fff;border:1px solid oklch(0.9 0.006 262);border-radius:21.1px;padding:4px 4.8px 4px 8.8px;box-shadow:0 12px 32px -12px rgba(20,12,4,.28)">
+    <span style="font-size:9px;font-weight:700;letter-spacing:.03em;color:oklch(0.45 0.01 60);margin-right:3px">STATE</span>
+    <sc-for list="{{ stateOptions }}" as="o" hint-placeholder-count="4">
+      <span onClick="{{ o.onClick }}" style="font-size:9px;font-weight:600;padding:4px 8px;border-radius:14.1px;cursor:pointer;background:{{ o.bg }};color:{{ o.color }}">{{ o.label }}</span>
+    </sc-for>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'overview', selectedJob: null, uploadStage: null, hue: 265, dataState: 'ready', notifOpen: false, autoSel: {}, jobBucket: {} };
+  setHue = (h) => this.setState({ hue: h, mono: false });
+  setMono = () => this.setState({ mono: true });
+  setDataState = (s) => this.setState({ dataState: s });
+  toggleNotif = () => this.setState(s => ({ notifOpen: !s.notifOpen }));
+  closeNotif = () => this.setState({ notifOpen: false });
+  setTailorTab = (t) => this.setState({ tailorTab: t });
+  toggleAuto = () => this.setState(s => ({ autoOn: s.autoOn === false ? true : false }));
+  toggleSel = (i) => this.setState(s => { const sel = { ...(s.autoSel || {}) }; if (sel[i]) delete sel[i]; else sel[i] = true; return { autoSel: sel }; });
+  selectAllAuto = (n) => this.setState(s => { const cur = s.autoSel || {}; if (Object.keys(cur).length >= n) return { autoSel: {} }; const all = {}; for (let i = 0; i < n; i++) all[i] = true; return { autoSel: all }; });
+  applySelectedAuto = () => this.setState({ autoSel: {} });
+  toggleBucket = (id) => this.setState(s => { const b = { ...(s.jobBucket || {}) }; if (b[id]) delete b[id]; else b[id] = true; return { jobBucket: b }; });
+  clearBucket = () => this.setState({ jobBucket: {} });
+  moveBucket = () => this.setState({ jobBucket: {}, screen: 'autoapply' });
+  selectAllBucket = () => this.setState(s => { const b = {}; const cur = s.jobBucket || {}; const all = Object.keys(cur).length >= this.jobsData.length; if (!all) this.jobsData.forEach(j => { b[j.id] = true; }); return { jobBucket: b }; });
+  toggleRail = () => this.setState(s => ({ railOpen: !s.railOpen }));
+
+  openUpload = () => this.setState({ uploadStage: 'ask' });
+  closeUpload = () => this.setState({ uploadStage: null });
+  stopProp = (e) => { e.stopPropagation(); };
+  startProcessing = () => {
+    this.setState({ uploadStage: 'processing' });
+    setTimeout(() => this.setState({ uploadStage: null, screen: 'editor' }), 1800);
+  };
+
+  jobsData = [
+    { id: 1, title: 'Senior Product Designer', company: 'Northwind Labs', location: 'Remote', salary: '$135k–$160k', type: 'Full-time', matchScore: 94, tags: ['Figma', 'Design Systems', 'B2B SaaS'],
+      description: 'Own end-to-end product design for our core workflow tools, partnering closely with PM and eng to ship high-craft experiences at speed.',
+      requirements: ['6+ years product design experience', 'Strong systems-thinking and Figma fluency', 'Track record shipping 0-to-1 B2B products', 'Comfortable presenting to execs'],
+      coverLetterPreview: 'I\'m excited about Northwind Labs\' focus on craft in B2B tooling — over the past six years I\'ve led design systems and 0-to-1 launches that mirror the scope of this role...' },
+    { id: 2, title: 'Frontend Engineer', company: 'Cascade Health', location: 'San Francisco, CA', salary: '$150k–$175k', type: 'Full-time', tags: ['React', 'TypeScript', 'Healthcare'], matchScore: 88,
+      description: 'Build patient-facing tools on React/TypeScript, working directly with clinicians to shape the product roadmap.',
+      requirements: ['4+ years with React and TypeScript', 'Experience in regulated/healthcare software a plus', 'Strong eye for accessible, performant UI', 'Comfortable owning features end-to-end'],
+      coverLetterPreview: 'Cascade Health\'s mission to modernize patient tools resonates with my background building accessible React interfaces for regulated industries...' },
+    { id: 3, title: 'Growth Marketing Manager', company: 'Fielder', location: 'Remote', salary: '$110k–$130k', type: 'Full-time', tags: ['Lifecycle', 'SQL', 'Paid Social'], matchScore: 76,
+      description: 'Own lifecycle and paid acquisition channels for a fast-growing consumer app, reporting directly to the Head of Growth.',
+      requirements: ['3+ years growth/lifecycle marketing', 'Comfortable with SQL and analytics tooling', 'Experience running paid social campaigns', 'Startup pace, high ownership'],
+      coverLetterPreview: 'Fielder\'s consumer growth story caught my attention — I\'ve spent the last three years scaling lifecycle programs in similarly fast-moving startups...' },
+    { id: 4, title: 'Data Analyst, Ops', company: 'Brightline Freight', location: 'Chicago, IL', salary: '$95k–$115k', type: 'Full-time', tags: ['SQL', 'Looker', 'Logistics'], matchScore: 82,
+      description: 'Partner with ops leadership to build dashboards and models that keep the freight network running efficiently.',
+      requirements: ['2+ years analytics experience', 'Advanced SQL and dashboarding (Looker/Tableau)', 'Comfortable with ambiguous, ops-heavy problems'],
+      coverLetterPreview: 'Brightline\'s scale of operational complexity is exactly the kind of problem space I enjoy — my analytics work has consistently focused on ops efficiency...' },
+    { id: 5, title: 'Customer Success Lead', company: 'Loomwork', location: 'Austin, TX', salary: '$90k–$105k', type: 'Full-time', tags: ['SaaS', 'Onboarding', 'Retention'], matchScore: 71,
+      description: 'Lead the CS team through onboarding, renewals, and expansion for our mid-market SaaS customer base.',
+      requirements: ['3+ years CS or account management', 'Experience owning renewal/expansion targets', 'People-management experience preferred'],
+      coverLetterPreview: 'Loomwork\'s emphasis on customer retention aligns closely with my experience leading CS teams through onboarding and renewal cycles...' },
+    { id: 6, title: 'Backend Engineer, Platform', company: 'Northwind Labs', location: 'Remote', salary: '$140k–$170k', type: 'Full-time', tags: ['Go', 'Distributed Systems'], matchScore: 90,
+      description: 'Design and scale the core services powering our platform, with a focus on reliability and developer experience.',
+      requirements: ['5+ years backend engineering', 'Experience with Go or similar', 'Distributed systems and on-call experience'],
+      coverLetterPreview: 'I\'ve spent the past five years building reliable distributed backends, and Northwind\'s platform scale is exactly the challenge I\'m looking for next...' },
+  ];
+
+  scoreStyle(score) {
+    if (score >= 90) return { bg: 'oklch(0.94 0.06 145)', color: 'oklch(0.42 0.13 145)' };
+    if (score >= 80) return { bg: 'oklch(0.95 0.05 70)', color: 'oklch(0.5 0.13 70)' };
+    return { bg: 'oklch(0.935 0.006 262)', color: 'oklch(0.45 0.01 60)' };
+  }
+  logoBgFor(seed) {
+    const hues = [40, 250, 145, 300, 20, 200];
+    return `oklch(0.9 0.05 ${hues[seed % hues.length]})`;
+  }
+
+  renderIcons() {
+    if (window.lucide && window.lucide.createIcons) {
+      try { window.lucide.createIcons({ attrs: { width: 15, height: 15, 'stroke-width': 2 } }); } catch (e) {}
+    }
+  }
+  componentDidMount() {
+    this.renderIcons();
+    if (!window.lucide) {
+      this._iconTimer = setInterval(() => { if (window.lucide) { this.renderIcons(); clearInterval(this._iconTimer); } }, 120);
+    }
+  }
+  componentDidUpdate() { this.renderIcons(); }
+  componentWillUnmount() { if (this._iconTimer) clearInterval(this._iconTimer); }
+
+  setScreen(s) { this.setState({ screen: s }); }
+  openTailor(job) { this.setState({ screen: 'tailor', selectedJob: job }); }
+  openJobDetail = (job) => this.setState({ jobDetail: job });
+  closeJobDetail = () => this.setState({ jobDetail: null });
+  quickApplyDetail = () => { const j = this.state.jobDetail; this.setState({ jobDetail: null, screen: 'tailor', selectedJob: j }); };
+
+  renderVals() {
+    const screen = this.state.screen;
+    const railOpen = !!this.state.railOpen;
+    const railJ = railOpen ? 'flex-start' : 'center';
+    const labelD = railOpen ? 'block' : 'none';
+    const navItem = (key, label, icon) => {
+      const active = screen === key;
+      return {
+        label, icon,
+        iconColor: active ? 'oklch(0.5 calc(0.18*var(--pw-cmul,1)) var(--pw-hue,265))' : 'oklch(0.48 0.012 262)',
+        bg: active ? 'linear-gradient(135deg, oklch(0.93 calc(0.08*var(--pw-cmul,1)) var(--pw-hue,265)), oklch(0.95 calc(0.055*var(--pw-cmul,1)) var(--pw-hue,265)))' : 'transparent',
+        shadow: active ? 'inset 0 0 0 1px oklch(0.86 calc(0.07*var(--pw-cmul,1)) var(--pw-hue,265)), 0 4px 12px -6px oklch(0.7 calc(0.16*var(--pw-cmul,1)) var(--pw-hue,265) / 45%)' : 'none',
+        color: active ? 'oklch(0.42 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265))' : 'oklch(0.3 0.012 262)',
+        weight: active ? 700 : 500,
+        onClick: () => this.setScreen(key),
+      };
+    };
+
+    const bucket = this.state.jobBucket || {};
+    const jobs = this.jobsData.map((j, i) => {
+      const s = this.scoreStyle(j.matchScore);
+      const inB = !!bucket[j.id];
+      return { ...j, scoreBg: s.bg, scoreColor: s.color, logoBg: this.logoBgFor(i), onTailor: () => this.openTailor(j),
+        inBucket: inB, onBucket: () => this.toggleBucket(j.id), onDetail: () => this.openJobDetail(j),
+        cardBorder: inB ? 'oklch(0.6 calc(0.16*var(--pw-cmul,1)) var(--pw-hue,265))' : 'oklch(0.925 0.006 262)',
+        cardShadow: inB ? '0 0 0 2px oklch(0.85 calc(0.08*var(--pw-cmul,1)) var(--pw-hue,265)),0 12px 26px -14px rgba(22,24,42,.2)' : '0 1px 2px rgba(22,24,42,.03),0 10.6px 24.6px -14.1px rgba(22,24,42,.12)',
+        boxBg: inB ? 'linear-gradient(135deg,oklch(0.68 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))' : '#fff',
+        boxBorder: inB ? 'oklch(0.6 calc(0.18*var(--pw-cmul,1)) var(--pw-hue,265))' : 'oklch(0.82 0.01 262)',
+        checkDisplay: inB ? 'flex' : 'none' };
+    });
+    const bucketIds = Object.keys(bucket);
+    const bucketJobs = this.jobsData.filter(j => bucket[j.id]).map(j => ({ title: j.title, company: j.company, logoBg: this.logoBgFor(this.jobsData.indexOf(j)), onRemove: () => this.toggleBucket(j.id) }));
+
+    const selectedJobRaw = this.state.selectedJob || this.jobsData[0];
+    const sStyle = this.scoreStyle(selectedJobRaw.matchScore);
+    const sc = selectedJobRaw.matchScore;
+    const selectedJob = { ...selectedJobRaw, scoreBg: sStyle.bg, scoreColor: sStyle.color,
+      fitLabel: sc >= 90 ? 'Strong match' : sc >= 80 ? 'Good match' : 'Fair match',
+      fitSub: sc >= 90 ? 'You meet most requirements' : sc >= 80 ? 'You meet many requirements' : 'You meet some requirements',
+      fitRingBg: `conic-gradient(oklch(0.6 calc(0.14*var(--pw-cmul,1)) var(--pw-hue,265)) 0 ${sc}%, oklch(0.92 0.006 262) ${sc}% 100%)`,
+    };
+
+    const topMatches = jobs.slice(0, 3).sort((a, b) => b.matchScore - a.matchScore);
+
+    return {
+      isOnboarding: screen === 'onboarding', isOverview: screen === 'overview', isResume: screen === 'resume', isJobs: screen === 'jobs',
+      isTailor: screen === 'tailor', isApplications: screen === 'applications', isEditor: screen === 'editor', isAutoApply: screen === 'autoapply', isSettings: screen === 'settings',
+      goToSettings: () => this.setScreen('settings'),
+      navBottom: [
+        { ...navItem('settings', 'Settings', 'settings'), justify: railJ, labelDisplay: labelD },
+      ],
+      settingsNotif: [
+        { label: 'Email job alerts', on: true }, { label: 'Auto-apply summaries', on: true }, { label: 'Interview reminders', on: false },
+      ].map(t => ({ label: t.label, track: t.on ? 'linear-gradient(135deg,oklch(0.68 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))' : 'oklch(0.88 0.006 262)', knob: t.on ? '19px' : '2px' })),
+      showUploadModal: this.state.uploadStage !== null,
+      isAsking: this.state.uploadStage === 'ask',
+      isProcessing: this.state.uploadStage === 'processing',
+      openUpload: this.openUpload, closeUpload: this.closeUpload, stopProp: this.stopProp, startProcessing: this.startProcessing,
+      goToJobs: () => this.setScreen('jobs'),
+      goToOverview: () => this.setScreen('overview'),
+      goToResume: () => this.setScreen('resume'),
+      goToApplications: () => this.setScreen('applications'),
+      goToAutoApply: () => this.setScreen('autoapply'),
+      searchFilters: [
+        { label: 'Workplace', icon: 'building-2' }, { label: 'Companies', icon: 'building' }, { label: 'Degree Level', icon: 'graduation-cap' },
+        { label: 'Max Experience', icon: 'gauge' }, { label: 'Sponsors Visa', icon: 'plane' }, { label: 'Role', icon: 'user' },
+        { label: 'Job Type', icon: 'clock' }, { label: 'Employment Type', icon: 'file-text' },
+      ],
+      showJobDetail: !!this.state.jobDetail,
+      closeJobDetail: this.closeJobDetail,
+      quickApplyDetail: this.quickApplyDetail,
+      jobDetail: (() => { const jd = this.state.jobDetail; if (!jd) return { requirements: [] }; const st = this.scoreStyle(jd.matchScore); return { ...jd, scoreBg: st.bg, scoreColor: st.color, logoBg: this.logoBgFor(this.jobsData.indexOf(jd)) }; })(),
+      bucketCount: bucketIds.length,
+      bucketHas: bucketIds.length > 0,
+      bucketJobs,
+      clearBucket: this.clearBucket,
+      moveBucket: this.moveBucket,
+      selectAllBucket: this.selectAllBucket,
+
+      autoOn: this.state.autoOn !== false,
+      toggleAuto: this.toggleAuto,
+      autoTrack: this.state.autoOn !== false ? 'linear-gradient(135deg,oklch(0.68 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))' : 'oklch(0.88 0.006 262)',
+      autoKnob: this.state.autoOn !== false ? '19px' : '2px',
+      autoStats: [
+        { label: 'IN QUEUE', value: '8', icon: 'layers', foot: '3 ready to review' },
+        { label: 'APPLIED TODAY', value: '12', icon: 'send', foot: 'of 25 free / day' },
+        { label: 'AWAITING APPROVAL', value: '3', icon: 'user-check', foot: 'needs your review' },
+        { label: 'AVG MATCH', value: '86%', icon: 'target', foot: 'across the queue' },
+      ],
+      autoSelCount: Object.keys(this.state.autoSel || {}).length,
+      autoHasSel: Object.keys(this.state.autoSel || {}).length > 0,
+      autoSelectAll: () => this.selectAllAuto(6),
+      autoApplySelected: this.applySelectedAuto,
+      autoSelAllBg: Object.keys(this.state.autoSel || {}).length >= 6 ? 'linear-gradient(135deg,oklch(0.68 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))' : '#fff',
+      autoSelAllBorder: Object.keys(this.state.autoSel || {}).length >= 6 ? 'oklch(0.6 calc(0.18*var(--pw-cmul,1)) var(--pw-hue,265))' : 'oklch(0.82 0.01 262)',
+      autoSelAllCheck: Object.keys(this.state.autoSel || {}).length >= 6 ? 'flex' : 'none',
+
+      autoQueue: [
+        { role: 'Senior Product Designer', company: 'Northwind Labs', match: 94, status: 'Awaiting approval', sBg: 'oklch(0.95 0.05 70)', sColor: 'oklch(0.46 0.13 70)', time: 'Ready now', logoBg: this.logoBgFor(0), review: true },
+        { role: 'Backend Engineer, Platform', company: 'Northwind Labs', match: 90, status: 'Tailoring…', sBg: 'oklch(0.965 0.02 var(--pw-hue,265))', sColor: 'oklch(0.48 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))', time: 'In progress', logoBg: this.logoBgFor(5), review: false },
+        { role: 'Frontend Engineer', company: 'Cascade Health', match: 88, status: 'Awaiting approval', sBg: 'oklch(0.95 0.05 70)', sColor: 'oklch(0.46 0.13 70)', time: 'Ready now', logoBg: this.logoBgFor(1), review: true },
+        { role: 'Data Analyst, Ops', company: 'Brightline Freight', match: 82, status: 'Queued', sBg: 'oklch(0.945 0.006 262)', sColor: 'oklch(0.45 0.01 60)', time: 'Position 4', logoBg: this.logoBgFor(3), review: false },
+        { role: 'Growth Marketing Manager', company: 'Fielder', match: 76, status: 'Submitted', sBg: 'oklch(0.95 0.05 145)', sColor: 'oklch(0.4 0.13 145)', time: '2h ago', logoBg: this.logoBgFor(2), review: false },
+        { role: 'Customer Success Lead', company: 'Loomwork', match: 71, status: 'Skipped', sBg: 'oklch(0.95 0.03 25)', sColor: 'oklch(0.52 0.12 25)', time: 'Low match', logoBg: this.logoBgFor(4), review: false },
+      ].map((r, i) => {
+        const sel = !!(this.state.autoSel || {})[i];
+        return { ...r, selected: sel, onToggle: () => this.toggleSel(i),
+          rowBg: sel ? 'oklch(0.97 0.03 var(--pw-hue,265))' : '#fff',
+          boxBg: sel ? 'linear-gradient(135deg,oklch(0.68 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265)),oklch(0.58 calc(0.2*var(--pw-cmul,1)) var(--pw-hue,265)))' : '#fff',
+          boxBorder: sel ? 'oklch(0.6 calc(0.18*var(--pw-cmul,1)) var(--pw-hue,265))' : 'oklch(0.82 0.01 262)',
+          checkDisplay: sel ? 'flex' : 'none' };
+      }),
+
+      tailorChanges: [
+        { tag: 'Added', text: 'Partnered directly with PM and engineering leadership to ship 0-to-1 B2B SaaS features', reason: 'Matches "0-to-1 B2B products" in the description', tagBg: 'oklch(0.95 0.05 145)', tagColor: 'oklch(0.4 0.13 145)' },
+        { tag: 'Added', text: 'Built and scaled a reusable design system adopted across 4 product teams', reason: 'Matches "design systems fluency"', tagBg: 'oklch(0.95 0.05 145)', tagColor: 'oklch(0.4 0.13 145)' },
+        { tag: 'Removed', text: 'Managed a small team of contractors', reason: 'Not relevant to this role', tagBg: 'oklch(0.95 0.03 25)', tagColor: 'oklch(0.52 0.13 25)' },
+        { tag: 'Keyword', text: 'Surfaced "Figma" and "Prototyping" higher in Skills', reason: 'Required tools in the posting', tagBg: 'oklch(0.965 0.02 var(--pw-hue,265))', tagColor: 'oklch(0.48 calc(0.15*var(--pw-cmul,1)) var(--pw-hue,265))' },
+        { tag: 'Missing', text: 'Consider adding experience with "Design tokens"', reason: 'Mentioned in the JD, not found in your resume', tagBg: 'oklch(0.95 0.05 70)', tagColor: 'oklch(0.46 0.13 70)' },
+      ],
+      previewExp: [
+        { dates: 'JAN 2021 — PRESENT', title: 'Senior Product Designer @ Halcyon', bullets: [
+          { text: 'Led design for 3 core product workflows across web and mobile', bg: 'transparent', color: 'oklch(0.4 0.01 60)', strike: 'none' },
+          { text: 'Partnered directly with PM and engineering leadership to ship 0-to-1 B2B SaaS features', bg: 'oklch(0.95 0.05 145)', color: 'oklch(0.34 0.12 145)', strike: 'none' },
+          { text: 'Built and scaled a reusable design system adopted across 4 product teams', bg: 'oklch(0.95 0.05 145)', color: 'oklch(0.34 0.12 145)', strike: 'none' },
+          { text: 'Managed a small team of contractors', bg: 'oklch(0.96 0.03 25)', color: 'oklch(0.55 0.1 25)', strike: 'line-through' },
+        ] },
+        { dates: 'JUN 2018 — DEC 2020', title: 'Product Designer @ Wren & Co.', bullets: [
+          { text: 'Owned end-to-end design process from research to shipping', bg: 'transparent', color: 'oklch(0.4 0.01 60)', strike: 'none' },
+          { text: 'Ran usability studies that lifted activation by 18%', bg: 'transparent', color: 'oklch(0.4 0.01 60)', strike: 'none' },
+        ] },
+      ],
+      previewSkills: [
+        { t: 'UI Design', add: false }, { t: 'Design Systems', add: false }, { t: 'Figma', add: true }, { t: 'Prototyping', add: true }, { t: 'User Research', add: false }, { t: 'Roadmapping', add: false },
+      ].map(s => ({ t: s.t, bg: s.add ? 'oklch(0.95 0.05 145)' : 'oklch(0.965 0.006 262)', color: s.add ? 'oklch(0.38 0.12 145)' : 'oklch(0.4 0.01 60)' })),
+
+      isResumeTab: (this.state.tailorTab || 'resume') === 'resume',
+      isCoverTab: this.state.tailorTab === 'cover',
+      setResumeTab: () => this.setTailorTab('resume'),
+      setCoverTab: () => this.setTailorTab('cover'),
+      resumeTabStyle: (this.state.tailorTab || 'resume') === 'resume'
+        ? 'color:oklch(0.42 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265));border-bottom:2px solid oklch(0.55 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265));font-weight:700'
+        : 'color:oklch(0.5 0.01 60);border-bottom:2px solid transparent;font-weight:600',
+      coverTabStyle: this.state.tailorTab === 'cover'
+        ? 'color:oklch(0.42 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265));border-bottom:2px solid oklch(0.55 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265));font-weight:700'
+        : 'color:oklch(0.5 0.01 60);border-bottom:2px solid transparent;font-weight:600',
+      pageTitle: { overview: 'Overview', resume: 'My Resumes', jobs: 'Browse Jobs', tailor: 'Tailor & Apply', applications: 'Applications', editor: 'Resume Editor', autoapply: 'Auto-Apply Queue', settings: 'Settings', onboarding: 'Onboarding' }[screen] || 'Overview',
+      notifOpen: !!this.state.notifOpen,
+      toggleNotif: this.toggleNotif,
+      closeNotif: this.closeNotif,
+      notifications: [
+        { icon: 'calendar-check', color: 'oklch(0.55 0.14 145)', text: 'Interview scheduled with Brightline Freight', time: '2h ago' },
+        { icon: 'eye', color: 'oklch(0.55 0.14 250)', text: 'Cascade Health viewed your application', time: '5h ago' },
+        { icon: 'sparkles', color: 'oklch(0.55 calc(0.17*var(--pw-cmul,1)) var(--pw-hue,265))', text: '3 new high-match roles found for you', time: '1d ago' },
+        { icon: 'party-popper', color: 'oklch(0.58 0.14 70)', text: 'You received an offer from Northwind Labs', time: '2d ago' },
+      ],
+      recentApplied: [
+        { role: 'Senior Product Designer', company: 'Northwind Labs', status: 'Interview', statusBg: 'oklch(0.95 0.05 145)', statusColor: 'oklch(0.4 0.13 145)', date: 'Jul 20', logoBg: this.logoBgFor(0) },
+        { role: 'Frontend Engineer', company: 'Cascade Health', status: 'Applied', statusBg: 'oklch(0.95 0.02 250)', statusColor: 'oklch(0.45 0.1 250)', date: 'Jul 18', logoBg: this.logoBgFor(1) },
+        { role: 'Growth Marketing Manager', company: 'Fielder', status: 'Viewed', statusBg: 'oklch(0.935 0.006 262)', statusColor: 'oklch(0.45 0.01 60)', date: 'Jul 15', logoBg: this.logoBgFor(2) },
+        { role: 'Backend Engineer, Platform', company: 'Northwind Labs', status: 'Offer', statusBg: 'oklch(0.95 0.05 70)', statusColor: 'oklch(0.45 0.13 70)', date: 'Jul 8', logoBg: this.logoBgFor(5) },
+      ],
+      selectedJob,
+
+      railW: railOpen ? '196px' : '50px',
+      railAlign: railOpen ? 'stretch' : 'center',
+      railItemJustify: railJ,
+      labelDisplay: labelD,
+      railToggleIcon: 'chevrons-left',
+      railToggleRot: railOpen ? 'none' : 'rotate(180deg)',
+      toggleRail: this.toggleRail,
+
+      isReady: this.state.dataState === 'ready',
+      isLoading: this.state.dataState === 'loading',
+      isEmpty: this.state.dataState === 'empty',
+      isError: this.state.dataState === 'error',
+      skel6: [1, 2, 3, 4, 5, 6],
+      skel4: [1, 2, 3, 4],
+      skelRows: [1, 2, 3, 4, 5],
+      resetData: () => this.setDataState('ready'),
+      stateOptions: [
+        { key: 'ready', label: 'Ready' }, { key: 'loading', label: 'Loading' }, { key: 'empty', label: 'Empty' }, { key: 'error', label: 'Error' },
+      ].map(o => ({
+        label: o.label,
+        onClick: () => this.setDataState(o.key),
+        bg: this.state.dataState === o.key ? 'oklch(0.2 0.01 60)' : 'transparent',
+        color: this.state.dataState === o.key ? '#fff' : 'oklch(0.45 0.01 60)',
+      })),
+
+      navMain: [
+        { ...navItem('overview', 'Overview', 'layout-grid'), justify: railJ, labelDisplay: labelD },
+        { ...navItem('resume', 'My Resume', 'folder'), justify: railJ, labelDisplay: labelD },
+        { ...navItem('jobs', 'Browse Jobs', 'briefcase'), justify: railJ, labelDisplay: labelD },
+      ],
+      navAi: [
+        { ...navItem('tailor', 'Tailor Assistant', 'sparkles'), justify: railJ, labelDisplay: labelD, onClick: () => this.openTailor(this.jobsData[0]) },
+        { ...navItem('autoapply', 'Auto-Apply Queue', 'layers'), justify: railJ, labelDisplay: labelD, onClick: () => this.setScreen('autoapply') },
+      ],
+      navTrack: [
+        { ...navItem('applications', 'Applications', 'pie-chart'), justify: railJ, labelDisplay: labelD },
+      ],
+
+      hue: this.state.hue,
+      cmul: this.state.mono ? 0 : 1,
+      dark: this.state.mono ? 0.34 : 0,
+      themeSwatches: [
+        ...[
+          { name: 'Indigo', h: 265 }, { name: 'Violet', h: 305 }, { name: 'Blue', h: 240 },
+          { name: 'Teal', h: 195 }, { name: 'Emerald', h: 152 }, { name: 'Rose', h: 12 }, { name: 'Amber', h: 60 },
+        ].map(s => ({
+          name: s.name,
+          color: `oklch(0.62 0.19 ${s.h})`,
+          ring: (!this.state.mono && this.state.hue === s.h) ? `0 0 0 2px #fff, 0 0 0 4px oklch(0.62 0.19 ${s.h})` : 'inset 0 0 0 1px rgba(0,0,0,.08)',
+          onClick: () => this.setHue(s.h),
+        })),
+        {
+          name: 'Black & White',
+          color: 'linear-gradient(90deg, #1a1a1a 0 50%, #fff 50% 100%)',
+          ring: this.state.mono ? '0 0 0 2px #fff, 0 0 0 4px #1a1a1a' : 'inset 0 0 0 1px rgba(0,0,0,.15)',
+          onClick: () => this.setMono(),
+        },
+      ],
+
+      builderSections: ['Education', 'Work Experience', 'Organization Experience', 'Certification', 'Contacts', 'Website & Links', 'Skills', 'Hobbies'],
+      editorExperience: [
+        { dates: 'JAN 2021 — PRESENT', title: 'Senior Product Designer @ Halcyon', bullets: ['Led design for 3 core product workflows across web and mobile', 'Partnered with PM and engineering leadership to ship 0-to-1 B2B SaaS features', 'Built and scaled a reusable design system adopted across 4 product teams'] },
+        { dates: 'JUN 2018 — DEC 2020', title: 'Product Designer @ Wren & Co.', bullets: ['Owned end-to-end design process from research to shipping', 'Ran usability studies that lifted activation by 18%'] },
+      ],
+      editorSkills: ['UI Design', 'Prototyping', 'User Research', 'Design Systems', 'Roadmapping'],
+      editorTools: ['Figma', 'FigJam', 'Framer', 'Notion', 'Linear'],
+      alignIcons: ['align-left', 'align-center', 'align-right', 'align-justify', 'indent-decrease', 'indent-increase'],
+      toolIcons: ['bold', 'italic', 'underline', 'strikethrough'],
+      listIcons: ['list', 'list-ordered', 'text-quote', 'link'],
+      alignBarIcons: ['align-left', 'align-center', 'align-right'],
+
+      onboardingFields: [
+        { label: 'TARGET ROLES', value: 'Product Design, Frontend Engineering' },
+        { label: 'LOCATION', value: 'Remote · San Francisco, CA' },
+        { label: 'WORK AUTHORIZATION', value: 'US Citizen — no sponsorship needed' },
+        { label: 'SALARY EXPECTATION', value: '$120k – $165k' },
+        { label: 'START AVAILABILITY', value: 'Immediately' },
+      ],
+
+      weeklyApps: [
+        { label: 'W1', value: 2 }, { label: 'W2', value: 4 }, { label: 'W3', value: 3 }, { label: 'W4', value: 5 },
+        { label: 'W5', value: 4 }, { label: 'W6', value: 6 }, { label: 'W7', value: 5 }, { label: 'W8', value: 8 },
+      ].map(w => ({ ...w, h: Math.max(8, Math.round(w.value / 8 * 100)) + 'px' })),
+      outcomes: [
+        { label: 'Applied', count: 18, color: 'oklch(0.6 0.14 250)' },
+        { label: 'Viewed', count: 9, color: 'oklch(0.72 0.012 262)' },
+        { label: 'Interview', count: 8, color: 'oklch(0.6 0.14 145)' },
+        { label: 'Rejected', count: 5, color: 'oklch(0.62 0.18 25)' },
+        { label: 'Offer', count: 2, color: 'oklch(0.72 0.14 70)' },
+      ],
+
+      statCards: [
+        { label: 'APPLICATIONS SENT', value: '42', delta: '↑ +8', deltaText: 'this week', deltaColor: 'oklch(0.5 0.13 145)', icon: 'send' },
+        { label: 'AVG MATCH SCORE', value: '87%', delta: '↑ +3 pts', deltaText: 'vs last month', deltaColor: 'oklch(0.5 0.13 145)', icon: 'target' },
+        { label: 'INTERVIEWS', value: '5', delta: '2', deltaText: 'awaiting reply', deltaColor: 'oklch(0.4 0.01 60)', icon: 'calendar-check' },
+      ],
+      topMatches,
+      activity: [
+        { text: 'Application submitted to Northwind Labs — Senior Product Designer', time: '2h ago', dotColor: 'oklch(0.6 0.14 145)' },
+        { text: 'Resume tailored for Cascade Health — Frontend Engineer', time: '5h ago', dotColor: 'oklch(0.6 calc(0.14*var(--pw-cmul,1)) var(--pw-hue,265))' },
+        { text: 'Interview scheduled with Brightline Freight', time: 'Yesterday', dotColor: 'oklch(0.6 0.14 300)' },
+        { text: '3 new matches found for "Product Design"', time: '2 days ago', dotColor: 'oklch(0.55 0.01 60)' },
+      ],
+
+      resumeFiles: [
+        { title: 'Resume October 2025', subtitle: 'Last edited 2m ago', photo: true, plain: false, blank: false, locked: false },
+        { title: 'Untitled', subtitle: 'Last edited 2m ago', photo: false, plain: false, blank: true, locked: false },
+        { title: 'Resume September 2023', subtitle: 'Last edited 1d ago', photo: false, plain: true, blank: false, locked: false },
+        { title: 'Marketing Resume', subtitle: 'Last edited 3d ago', photo: false, plain: true, blank: false, locked: false },
+        { title: 'Cascade Health (tailored)', subtitle: 'Tailored 5h ago', photo: true, plain: false, blank: false, locked: false },
+        { title: 'Archived 2022 (Locked)', subtitle: 'Shared 3w ago', photo: false, plain: true, blank: false, locked: true },
+      ],
+      skills: ['Figma', 'Design Systems', 'User Research', 'Prototyping', 'React', 'Roadmapping'],
+      experience: [
+        { role: 'Senior Product Designer', company: 'Halcyon', dates: '2021 — Present' },
+        { role: 'Product Designer', company: 'Wren & Co.', dates: '2018 — 2021' },
+      ],
+      tailoredVersions: this.jobsData.slice(0, 3).map((j, i) => {
+        const s = this.scoreStyle(j.matchScore);
+        return { role: j.title, company: j.company, date: ['Jul 20', 'Jul 18', 'Jul 15'][i], matchScore: j.matchScore, scoreColor: s.color, logoBg: this.logoBgFor(i) };
+      }),
+
+      jobFilters: [
+        { label: 'Remote', bg: 'oklch(0.95 calc(0.04*var(--pw-cmul,1)) var(--pw-hue,265))', color: 'oklch(0.4 calc(0.14*var(--pw-cmul,1)) var(--pw-hue,265))', border: 'oklch(0.85 calc(0.06*var(--pw-cmul,1)) var(--pw-hue,265))' },
+        { label: 'Full-time', bg: '#fff', color: 'oklch(0.35 0.01 60)', border: 'oklch(0.88 0.006 60)' },
+        { label: 'Senior', bg: '#fff', color: 'oklch(0.35 0.01 60)', border: 'oklch(0.88 0.006 60)' },
+        { label: '$120k+', bg: '#fff', color: 'oklch(0.35 0.01 60)', border: 'oklch(0.88 0.006 60)' },
+        { label: 'Design', bg: '#fff', color: 'oklch(0.35 0.01 60)', border: 'oklch(0.88 0.006 60)' },
+      ],
+      jobs,
+
+      resumeDiff: [
+        { text: 'Led design for 3 core product workflows', bg: 'transparent', color: 'oklch(0.4 0.01 60)', strike: 'none' },
+        { text: '+ Partnered directly with PM and engineering leadership to ship 0-to-1 B2B SaaS features', bg: 'oklch(0.95 0.05 145)', color: 'oklch(0.35 0.13 145)', strike: 'none' },
+        { text: 'Owned end-to-end design process from research to shipping', bg: 'transparent', color: 'oklch(0.4 0.01 60)', strike: 'none' },
+        { text: '– Managed a small team of contractors', bg: 'oklch(0.96 0.03 25)', color: 'oklch(0.5 0.1 25)', strike: 'line-through' },
+        { text: '+ Built and scaled a reusable design system adopted across 4 product teams', bg: 'oklch(0.95 0.05 145)', color: 'oklch(0.35 0.13 145)', strike: 'none' },
+      ],
+
+      formFields: [
+        { label: 'FULL NAME', value: 'Jordan Reyes' },
+        { label: 'EMAIL', value: 'jordan.reyes@mail.com' },
+        { label: 'PHONE', value: '(415) 555-0148' },
+        { label: 'WORK AUTHORIZATION', value: 'US Citizen — no sponsorship needed' },
+      ],
+      screeningQs: [
+        { question: 'Why are you interested in this role?', answer: 'Northwind\'s focus on 0-to-1 B2B craft matches the systems work I\'ve led for the past six years.' },
+        { question: 'Describe a project where you led design end-to-end.', answer: 'Built and scaled a reusable design system adopted across 4 product teams at Halcyon.' },
+      ],
+
+      applications: this.jobsData.map((j, i) => {
+        const statuses = [
+          { status: 'Interview', bg: 'oklch(0.95 0.05 145)', color: 'oklch(0.4 0.13 145)' },
+          { status: 'Applied', bg: 'oklch(0.95 0.02 250)', color: 'oklch(0.45 0.1 250)' },
+          { status: 'Viewed', bg: 'oklch(0.935 0.006 262)', color: 'oklch(0.45 0.01 60)' },
+          { status: 'Rejected', bg: 'oklch(0.95 0.03 25)', color: 'oklch(0.5 0.13 25)' },
+          { status: 'Applied', bg: 'oklch(0.95 0.02 250)', color: 'oklch(0.45 0.1 250)' },
+          { status: 'Offer', bg: 'oklch(0.95 0.05 70)', color: 'oklch(0.45 0.13 70)' },
+        ][i];
+        return {
+          role: j.title, company: j.company, date: ['Jul 20', 'Jul 18', 'Jul 15', 'Jul 12', 'Jul 10', 'Jul 8'][i],
+          matchScore: j.matchScore, matchColor: this.scoreStyle(j.matchScore).color,
+          status: statuses.status, statusBg: statuses.bg, statusColor: statuses.color, logoBg: this.logoBgFor(i),
+        };
+      }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

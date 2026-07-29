@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -49,6 +49,21 @@ class ApplicationStatus(str, enum.Enum):
     closed = "closed"
 
 
+class ApplicationOutcome(str, enum.Enum):
+    applied = "applied"
+    interview = "interview"
+    offer = "offer"
+    rejected = "rejected"
+
+
+class AutoApplyStatus(str, enum.Enum):
+    queued = "queued"
+    awaiting_approval = "awaiting_approval"
+    tailoring = "tailoring"
+    submitted = "submitted"
+    skipped = "skipped"
+
+
 class Profile(IdentifierMixin, TimestampMixin, Base):
     __tablename__ = "profiles"
 
@@ -63,7 +78,12 @@ class Profile(IdentifierMixin, TimestampMixin, Base):
         default=ProfileReadiness.uploaded,
     )
     source_comparison_resolved: Mapped[bool] = mapped_column(nullable=False, default=False)
+    is_default: Mapped[bool] = mapped_column(nullable=False, default=False)
     ai_preferences: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False, default=dict)
+    contact: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    application_defaults: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    socials: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False, default=dict)
+    custom_sections: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
 
 
 class Operation(IdentifierMixin, TimestampMixin, Base):
@@ -200,6 +220,8 @@ class DocumentChange(IdentifierMixin, TimestampMixin, Base):
 
     generated_document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("generated_documents.id", ondelete="CASCADE"), nullable=False)
     section: Mapped[str] = mapped_column(String(120), nullable=False)
+    operation: Mapped[str] = mapped_column(String(20), nullable=False, default="rewrite")
+    classification: Mapped[str] = mapped_column(String(20), nullable=False, default="REPHRASED")
     original_text: Mapped[str] = mapped_column(Text, nullable=False)
     proposed_text: Mapped[str] = mapped_column(Text, nullable=False)
     rationale: Mapped[str] = mapped_column(Text, nullable=False)
@@ -251,3 +273,81 @@ class AgentRun(IdentifierMixin, Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error_code: Mapped[str | None] = mapped_column(String(100))
     agent_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+
+class JobPosting(IdentifierMixin, TimestampMixin, Base):
+    __tablename__ = "job_postings"
+    __table_args__ = (
+        UniqueConstraint("vendor", "vendor_job_id", name="uq_job_postings_vendor_job_id"),
+    )
+
+    vendor: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    vendor_job_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    company: Mapped[str] = mapped_column(String(300), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    team: Mapped[str | None] = mapped_column(String(300))
+    location: Mapped[str | None] = mapped_column(String(1000))
+    commitment: Mapped[str | None] = mapped_column(String(150))
+    hosted_url: Mapped[str] = mapped_column(String(2000), nullable=False)
+    apply_url: Mapped[str | None] = mapped_column(String(2000))
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_active: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class TrackedApplication(IdentifierMixin, TimestampMixin, Base):
+    """Applications the user has submitted (via quick-apply, manual apply, or a tailored submission).
+
+    Denormalizes role/company so the Applications view and Overview stats render
+    without joining across the separate ``jobs`` / ``job_postings`` catalogs.
+    """
+
+    __tablename__ = "tracked_applications"
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    job_posting_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("job_postings.id", ondelete="SET NULL")
+    )
+    role: Mapped[str] = mapped_column(String(500), nullable=False)
+    company: Mapped[str] = mapped_column(String(300), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(1000))
+    match_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
+    status: Mapped[ApplicationOutcome] = mapped_column(
+        Enum(ApplicationOutcome, name="application_outcome"),
+        nullable=False,
+        default=ApplicationOutcome.applied,
+    )
+    source: Mapped[str] = mapped_column(String(40), nullable=False, default="quick_apply")
+    applied_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    application_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+
+class AutoApplyQueueItem(IdentifierMixin, TimestampMixin, Base):
+    """A job queued for automated tailoring + submission, pending the user's review."""
+
+    __tablename__ = "auto_apply_queue"
+    __table_args__ = (
+        UniqueConstraint("profile_id", "job_posting_id", name="uq_auto_apply_profile_job"),
+    )
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    job_posting_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("job_postings.id", ondelete="SET NULL")
+    )
+    role: Mapped[str] = mapped_column(String(500), nullable=False)
+    company: Mapped[str] = mapped_column(String(300), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(1000))
+    match_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
+    status: Mapped[AutoApplyStatus] = mapped_column(
+        Enum(AutoApplyStatus, name="auto_apply_status"),
+        nullable=False,
+        default=AutoApplyStatus.queued,
+    )
+    note: Mapped[str | None] = mapped_column(String(300))
+    queue_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)

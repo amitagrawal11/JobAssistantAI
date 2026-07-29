@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.ai.registry import ProviderRegistry
 from app.config import get_settings
-from app.db.entities import AgentRun, Job, JobRequirement, MatchResult, Operation, OperationStatus, Profile, ProfileFact, RecordStatus
+from app.db.entities import AgentRun, Job, JobRequirement, MatchResult, Operation, OperationStatus, ParseRun, Profile, RecordStatus, SourceDocument
+from app.documents.source_preview import _readable_text
 from app.errors import DomainError
 from app.jobs.prompts import CANDIDATE_EVIDENCE_PROMPT, CANDIDATE_EVIDENCE_PROMPT_VERSION
 from app.models.ai import AgentRequest
@@ -17,10 +18,13 @@ from app.models.job import JobRequirementOutput
 from app.models.match import CandidateEvidenceOutput, MatchScoreRequest, MatchScoreResponse
 from app.operations.service import OperationService
 from app.scoring.aggregator import aggregate_match, normalize_agent_evidence
+from app.storage.protocol import ObjectStorage
 
 
 class MatchScoringPipeline:
-    def __init__(self, session: Session) -> None: self.session = session
+    def __init__(self, session: Session, storage: ObjectStorage) -> None:
+        self.session = session
+        self.storage = storage
 
     def score(self, request: MatchScoreRequest) -> MatchScoreResponse:
         profile = self._get(Profile, request.profile_id, "PROFILE_NOT_FOUND")
@@ -29,7 +33,7 @@ class MatchScoringPipeline:
         provider_id = profile.ai_preferences.get("provider"); model = profile.ai_preferences.get("model")
         if provider_id not in {"ollama", "openai"} or not model: raise DomainError(status_code=409, code="AI_PREFERENCE_REQUIRED", message="Choose an AI provider and model first.")
         requirements = [self._requirement(item) for item in self.session.scalars(select(JobRequirement).where(JobRequirement.job_id == job.id))]
-        facts = list(self.session.scalars(select(ProfileFact).where(ProfileFact.profile_id == profile.id, ProfileFact.is_current.is_(True), ProfileFact.verified.is_(True))))
+        resume_text = self._resume_text(profile.id)
         operation = Operation(profile_id=profile.id, operation_type="score_match", status=OperationStatus.pending, progress=0, payload={"job_id": str(job.id)})
         self.session.add(operation); self.session.flush(); operations = OperationService(self.session); operations.start(operation)
         try:
@@ -43,18 +47,8 @@ class MatchScoringPipeline:
                                  + json.dumps([item.model_dump() for item in requirements])
                                  + "</REQUIREMENTS>"
                              ),
-                             "untrusted_profile_facts": (
-                                 "<PROFILE_FACTS>"
-                                 + json.dumps([
-                                     {
-                                         "fact_id": str(fact.id),
-                                         "category": fact.category,
-                                         "key": fact.fact_key,
-                                         "value": fact.fact_value,
-                                     }
-                                     for fact in facts
-                                 ])
-                                 + "</PROFILE_FACTS>"
+                             "untrusted_resume_text": (
+                                 "<RESUME_TEXT>" + resume_text + "</RESUME_TEXT>"
                              ),
                              }),
                 CandidateEvidenceOutput,
@@ -66,13 +60,11 @@ class MatchScoringPipeline:
                 message="The selected AI provider could not match this profile. You can retry without losing the analyzed job.",
                 retryable=True,
             ) from error
-        verified_fact_ids = {str(fact.id) for fact in facts}
         normalized_evidence = normalize_agent_evidence(
             requirements,
             result.output.evaluations,
-            verified_fact_ids,
         )
-        aggregated = aggregate_match(requirements, normalized_evidence, verified_fact_ids)
+        aggregated = aggregate_match(requirements, normalized_evidence)
         match = MatchResult(profile_id=profile.id, job_id=job.id, operation_id=operation.id,
                             score=Decimal(str(aggregated.score)), status=RecordStatus.ready,
                             explanation=aggregated.model_dump(mode="json") | {"provider": provider_id, "model": model, "prompt_version": CANDIDATE_EVIDENCE_PROMPT_VERSION})
@@ -92,6 +84,26 @@ class MatchScoringPipeline:
         entity = self.session.get(entity_type, identifier)
         if entity is None: raise DomainError(status_code=404, code=code, message="The requested record was not found.")
         return entity
+
+    def _resume_text(self, profile_id) -> str:
+        parse_run = self.session.scalar(
+            select(ParseRun)
+            .join(SourceDocument, ParseRun.source_document_id == SourceDocument.id)
+            .where(SourceDocument.profile_id == profile_id)
+            .order_by(ParseRun.created_at.desc())
+            .limit(1)
+        )
+        if parse_run is None:
+            raise DomainError(status_code=409, code="RESUME_NOT_PARSED", message="Parse a resume for this profile before scoring a match.")
+        neutral_key = parse_run.parser_metadata.get("neutral_storage_key")
+        if not neutral_key:
+            raise DomainError(status_code=409, code="RESUME_NOT_PARSED", message="The parsed resume text is unavailable. Reprocess the document and retry.")
+        with self.storage.open(neutral_key) as handle:
+            neutral = json.loads(handle.read())
+        text = _readable_text(neutral.get("elements", []))
+        if not text.strip():
+            raise DomainError(status_code=409, code="RESUME_TEXT_EMPTY", message="The parsed resume contains no readable text to match.")
+        return text
 
     @staticmethod
     def _requirement(item: JobRequirement) -> JobRequirementOutput:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import io
 import json
+import logging
+import re
 import shutil
 import tempfile
 import uuid
@@ -20,6 +22,7 @@ from app.db.entities import (
     RecordStatus,
     SourceDocument,
 )
+from app.ai.registry import ProviderRegistry
 from app.documents.validation import validate_document
 from app.documents.normalizer import normalize_candidate_facts
 from app.documents.ai_extractor import extract_candidate_facts
@@ -29,6 +32,60 @@ from app.errors import DomainError
 from app.models.document import DocumentReprocessResponse, DocumentUploadResponse
 from app.storage.protocol import ObjectStorage
 from app.operations.service import OperationService
+
+logger = logging.getLogger(__name__)
+
+# Model families that are poor at profile extraction (code/embedding models).
+_LOW_QUALITY_MODEL_HINTS = ("coder", "-code", "code-", "embed", "embedding")
+
+
+def _derive_contact_socials(facts) -> tuple[dict[str, str], dict[str, str]]:
+    """Pull contact details + social links out of the extracted contact facts."""
+    parts = [s.strip() for f in facts if f.category == "contact" for s in f.value.split("|") if s.strip()]
+    joined = " ".join(parts)
+
+    def find(pattern: str) -> str:
+        match = re.search(pattern, joined, re.IGNORECASE)
+        return match.group(0).strip() if match else ""
+
+    email = find(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+    phone = find(r"\+?\d[\d ()-]{7,}\d")
+    socials = {
+        "linkedin": find(r"(?:https?://)?(?:www\.)?linkedin\.com/[^\s|,)\"]+"),
+        "github": find(r"(?:https?://)?(?:www\.)?github\.com/[^\s|,)\"]+"),
+        "twitter": find(r"(?:https?://)?(?:www\.)?(?:twitter|x)\.com/[^\s|,)\"]+"),
+        "telegram": find(r"(?:https?://)?(?:www\.)?t\.me/[^\s|,)\"]+"),
+        "discord": find(r"(?:https?://)?(?:www\.)?discord(?:\.gg|(?:app)?\.com/[^\s|,)\"]+)[^\s|,)\"]*"),
+    }
+    location = next(
+        (p for p in parts if not re.search(r"@|linkedin|github|https?://|t\.me|discord|\+?\d[\d ()-]{7,}", p, re.IGNORECASE)),
+        "",
+    )
+    bits = [b.strip() for b in location.split(",") if b.strip()]
+    contact = {
+        "mobile": phone,
+        "email": email,
+        "address": "",
+        "city": bits[0] if bits else "",
+        "country": bits[-1] if len(bits) > 1 else "",
+        "zipcode": "",
+    }
+    return contact, {k: v for k, v in socials.items() if v}
+
+
+def _preferred_extraction_model(models: list[str]) -> str | None:
+    """Pick the best installed model for resume extraction.
+
+    Prefers general chat models and de-prioritizes code/embedding models
+    (e.g. deepseek-coder), which extract resumes poorly.
+    """
+    if not models:
+        return None
+    ranked = sorted(
+        models,
+        key=lambda m: any(hint in m.lower() for hint in _LOW_QUALITY_MODEL_HINTS),
+    )
+    return ranked[0]
 
 
 class DocumentService:
@@ -173,6 +230,16 @@ class DocumentProcessingService:
             provider_id = settings.ai_provider
             configured_models = settings.ollama_models if provider_id == "ollama" else settings.openai_models
             model = next((item.strip() for item in configured_models.split(",") if item.strip()), None)
+            if not model and provider_id in {"ollama", "openai"}:
+                # No allowlist configured: pick the best model actually installed
+                # on the provider instead of silently degrading to the weak
+                # deterministic heuristic.
+                try:
+                    available = ProviderRegistry(settings).get(provider_id).models()
+                except Exception:
+                    logger.warning("could not list %s models for extraction", provider_id, exc_info=True)
+                    available = []
+                model = _preferred_extraction_model(available)
             if model:
                 profile.ai_preferences = {"provider": provider_id, "model": model}
         if provider_id in {"ollama", "openai"} and model:
@@ -184,15 +251,46 @@ class DocumentProcessingService:
                     "model": model,
                     "prompt_version": PROFILE_EXTRACTION_PROMPT_VERSION,
                 }
-            except Exception as error:
-                raise DomainError(
-                    status_code=503,
-                    code="PROFILE_EXTRACTION_FAILED",
-                    message="Docling parsed the resume, but the selected AI provider could not extract profile facts. Retry after checking the provider and model.",
-                    retryable=True,
-                ) from error
+                # Safety net: if a flaky model run yields fewer facts than the
+                # deterministic extractor, keep the larger set so results never
+                # regress below the baseline.
+                baseline = normalize_candidate_facts(result.parsed_document)
+                if len(baseline) > len(facts):
+                    logger.warning(
+                        "AI extraction returned %s facts (< %s deterministic); using deterministic",
+                        len(facts), len(baseline),
+                    )
+                    facts = baseline
+                    extraction_metadata = {"method": "deterministic_fallback", "provider": provider_id, "model": model}
+            except Exception:
+                # Never fail the upload outright: fall back to the deterministic
+                # extractor so the user still gets a usable (if smaller) profile.
+                logger.warning(
+                    "AI extraction failed (provider=%s model=%s); falling back to deterministic",
+                    provider_id, model, exc_info=True,
+                )
+                facts = normalize_candidate_facts(result.parsed_document)
+                extraction_metadata = {"method": "deterministic_fallback", "provider": provider_id, "model": model}
         else:
             facts = normalize_candidate_facts(result.parsed_document)
+
+        # Seed contact + socials from the resume, filling only empty fields so
+        # any values the user already edited are preserved on re-upload.
+        derived_contact, derived_socials = _derive_contact_socials(facts)
+        if not derived_contact.get("email") and profile.email:
+            derived_contact["email"] = profile.email
+        merged_contact = dict(profile.contact or {})
+        for key, value in derived_contact.items():
+            if value and not merged_contact.get(key):
+                merged_contact[key] = value
+        if merged_contact:
+            profile.contact = merged_contact
+        merged_socials = dict(profile.socials or {})
+        for key, value in derived_socials.items():
+            if value and not merged_socials.get(key):
+                merged_socials[key] = value
+        if merged_socials:
+            profile.socials = merged_socials
 
         parse_run_id = uuid.uuid4()
         lossless_key = (
@@ -246,10 +344,15 @@ class DocumentProcessingService:
         self.session.add(parse_run)
         self.session.flush()
 
+        # Only supersede facts in categories the new extraction actually covers.
+        # Re-uploading a resume that omits a section then keeps the existing data
+        # for that section instead of wiping it; covered sections are overridden.
+        new_categories = {fact.category for fact in facts}
         for existing in self.session.query(ProfileFact).filter_by(
             profile_id=document.profile_id, is_current=True
         ):
-            existing.is_current = False
+            if existing.category in new_categories:
+                existing.is_current = False
         for fact in facts:
             self.session.add(
                 ProfileFact(

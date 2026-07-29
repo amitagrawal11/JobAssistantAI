@@ -2,6 +2,7 @@
 .superpowers/
 .codex/
 node_modules/
+graphify-out/
 .output/
 dist/
 .env

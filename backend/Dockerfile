@@ -17,6 +17,10 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir -r requirements-docling.txt \
     && playwright install --with-deps chromium
 
+# Pre-download docling models into the image so the first document parse at
+# runtime never has to fetch ~500MB from HuggingFace (the cold-start penalty).
+RUN python -c "from docling.utils.model_downloader import download_models; download_models(with_code_formula=False, with_picture_classifier=False)"
+
 COPY app ./app
 COPY scripts ./scripts
 COPY alembic.ini ./alembic.ini

@@ -26,7 +26,6 @@ CLASSIFICATION_MULTIPLIER = {
 def normalize_agent_evidence(
     requirements: list[JobRequirementOutput],
     evidence: list[RequirementEvidence],
-    verified_fact_ids: set[str],
 ) -> list[RequirementEvidence]:
     """Convert incomplete or ambiguous agent output into conservative unknowns."""
     grouped: dict[str, list[RequirementEvidence]] = defaultdict(list)
@@ -38,8 +37,7 @@ def normalize_agent_evidence(
     normalized: list[RequirementEvidence] = []
     for requirement in requirements:
         candidates = grouped[requirement.requirement_id]
-        has_valid_sources = len(candidates) == 1 and set(candidates[0].source_fact_ids) <= verified_fact_ids
-        if has_valid_sources:
+        if len(candidates) == 1:
             normalized.append(candidates[0])
         else:
             normalized.append(
@@ -57,15 +55,11 @@ def normalize_agent_evidence(
 def aggregate_match(
     requirements: list[JobRequirementOutput],
     evidence: list[RequirementEvidence],
-    verified_fact_ids: set[str],
 ) -> AggregatedMatch:
     requirement_ids = {item.requirement_id for item in requirements}
     counts = Counter(item.requirement_id for item in evidence)
     if set(counts) != requirement_ids or any(count != 1 for count in counts.values()):
         raise ValueError("Every requirement must have exactly one evidence classification.")
-    for item in evidence:
-        if not set(item.source_fact_ids) <= verified_fact_ids:
-            raise ValueError("Evidence may reference only current verified profile facts.")
 
     evidence_by_id = {item.requirement_id: item for item in evidence}
     category_counts = Counter(item.category for item in requirements)

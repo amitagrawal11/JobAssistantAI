@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from app.models.common import ApiModel
 from app.models.job import RequirementCategory
@@ -18,18 +18,9 @@ class EvidenceClassification(str, enum.Enum):
 class RequirementEvidence(ApiModel):
     requirement_id: str
     classification: EvidenceClassification
-    source_fact_ids: list[str]
+    source_fact_ids: list[str] = Field(default_factory=list)
     reason: str = Field(min_length=1, max_length=2000)
     confidence: float = Field(ge=0, le=1)
-
-    @model_validator(mode="after")
-    def evidence_matches_classification(self):
-        supported = self.classification in {EvidenceClassification.matched, EvidenceClassification.partial}
-        if supported and not self.source_fact_ids:
-            raise ValueError("matched and partial classifications require source facts")
-        if not supported and self.source_fact_ids:
-            raise ValueError("missing and unknown classifications cannot cite source facts")
-        return self
 
 
 class CandidateEvidenceOutput(ApiModel):
@@ -41,7 +32,7 @@ class MatchItem(ApiModel):
     requirement: str
     category: RequirementCategory
     classification: EvidenceClassification
-    source_fact_ids: list[str]
+    source_fact_ids: list[str] = Field(default_factory=list)
     reason: str
     confidence: float
     score_contribution: float
