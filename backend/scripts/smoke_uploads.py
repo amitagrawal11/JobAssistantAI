@@ -10,7 +10,7 @@ import httpx
 from sqlalchemy import select
 
 from app.config import get_settings
-from app.db.entities import SourceDocument
+from app.db.entities import Operation, OperationStage, OperationStatus, SourceDocument
 from app.db.session import get_session_factory
 from app.storage.filesystem import FilesystemStorage
 from smoke_cleanup import register_profile
@@ -54,6 +54,16 @@ def assert_error(response: httpx.Response, status: int, code: str) -> None:
     assert response.json()["error"]["code"] == code
 
 
+def release_extraction_slot(operation_id: str) -> None:
+    """Keep this upload-boundary smoke independent of the extraction worker."""
+    with get_session_factory()() as session, session.begin():
+        operation = session.get(Operation, operation_id)
+        assert operation is not None
+        operation.status = OperationStatus.succeeded
+        operation.stage = OperationStage.complete
+        operation.progress = 100
+
+
 def main() -> None:
     pdf = (FIXTURES / "jordan-lee-resume.pdf").read_bytes()
     docx = (FIXTURES / "jordan-lee-resume.docx").read_bytes()
@@ -73,6 +83,7 @@ def main() -> None:
         assert uploaded_pdf["filename"] == "Jordan_Lee_Resume.pdf"
         assert uploaded_pdf["sha256"] == hashlib.sha256(pdf).hexdigest()
         assert uploaded_pdf["size_bytes"] == len(pdf)
+        release_extraction_slot(uploaded_pdf["operation_id"])
 
         docx_response = upload(
             client,
@@ -85,6 +96,7 @@ def main() -> None:
         )
         assert docx_response.status_code == 202, docx_response.text
         assert docx_response.json()["sha256"] == hashlib.sha256(docx).hexdigest()
+        release_extraction_slot(docx_response.json()["operation_id"])
 
         assert_error(
             upload(
