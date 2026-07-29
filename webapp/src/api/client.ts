@@ -50,6 +50,24 @@ async function connection(): Promise<BackendConnection> {
   };
 }
 
+export async function apiDownload(path: string, timeoutMs = 120_000): Promise<{ blob: Blob; filename: string }> {
+  const backend = await connection();
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(`${backend.baseUrl}${path}`, {
+      signal: controller.signal,
+      headers: { Authorization: `Bearer ${backend.bearerToken}` },
+    });
+    if (!response.ok) throw new BackendError('DOWNLOAD_FAILED', 'The PDF could not be generated.', true, response.status);
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const filename = disposition.match(/filename="([^"]+)"/)?.[1] ?? 'tailored-resume.pdf';
+    return { blob: await response.blob(), filename };
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
+}
+
 export async function apiRequest<T>(
   path: string,
   schema: z.ZodType<T>,

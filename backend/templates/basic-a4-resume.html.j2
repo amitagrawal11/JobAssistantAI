@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: white; color: #202632; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.42; }
+    .resume-print { width: 210mm; min-height: 297mm; padding: 15mm 16mm 16mm; }
+    header { padding-bottom: 4mm; border-bottom: 0.35mm solid #687386; text-align: center; }
+    h1 { margin: 0; font-size: 20pt; line-height: 1.15; letter-spacing: -0.3pt; }
+    .contact { margin-top: 2mm; color: #4e596a; font-size: 8.5pt; }
+    section { break-inside: auto; margin-top: 5mm; }
+    h2 { break-after: avoid; margin: 0 0 2mm; padding-bottom: 1mm; border-bottom: 0.2mm solid #b8c0cc;
+         font-size: 9.5pt; letter-spacing: 0.8pt; text-transform: uppercase; }
+    .resume-item { break-inside: avoid; margin: 0 0 2.2mm; }
+    .item-label { margin-right: 1.5mm; font-weight: 700; }
+    .item-value { white-space: pre-line; }
+  </style>
+</head>
+<body>
+  <main class="resume-print" data-render-ready="true">
+    <header>
+      <h1>{{ resume.name }}</h1>
+      <div class="contact">
+        {% if resume.email %}<span>{{ resume.email }}</span>{% endif %}
+        {% for key, value in resume.contact.items() %}
+          {% if value %}<span> · {{ value }}</span>{% endif %}
+        {% endfor %}
+      </div>
+    </header>
+    {% for section in resume.sections %}
+      <section data-section-id="{{ section.id }}">
+        <h2>{{ section.title }}</h2>
+        {% for item in section["items"] %}
+          <div class="resume-item" data-node-id="{{ item.id }}">
+            {% if section.id not in ["summary", "skills"] %}<span class="item-label">{{ item.label }}:</span>{% endif %}
+            <span class="item-value">{{ item.value }}</span>
+          </div>
+        {% endfor %}
+      </section>
+    {% endfor %}
+  </main>
+</body>
+</html>

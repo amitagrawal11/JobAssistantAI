@@ -42,12 +42,41 @@ class DocumentChangeOutput(ApiModel):
     reason: str
     source_fact_ids: list[str]
     status: ReviewStatusValue
+    supported: bool
+
+
+class ResumeItemOutput(ApiModel):
+    id: str
+    label: str
+    value: str
+    source_fact_ids: list[str]
+
+
+class ResumeSectionOutput(ApiModel):
+    id: str
+    title: str
+    items: list[ResumeItemOutput]
+
+
+class CanonicalResumeOutput(ApiModel):
+    name: str
+    email: str | None
+    contact: dict[str, str]
+    sections: list[ResumeSectionOutput]
+    template_id: str = "basic-a4-v1"
+    page_size: str = "A4"
+
+    @property
+    def plain_text(self) -> str:
+        return "\n".join(item.value for section in self.sections for item in section.items)
 
 
 class ResumeDocumentOutput(ApiModel):
     id: str
     status: str
     changes: list[DocumentChangeOutput]
+    source: CanonicalResumeOutput
+    current: CanonicalResumeOutput
 
 
 class CoverLetterDocumentOutput(ApiModel):
@@ -66,6 +95,17 @@ class DocumentTailorResponse(ApiModel):
     provider: str
     model: str
     prompt_version: str
+
+
+class GeneratedResumeResponse(ApiModel):
+    id: str
+    job_id: str
+    title: str
+    company: str | None
+    source_url: str | None
+    source: CanonicalResumeOutput
+    current: CanonicalResumeOutput
+    changes: list[DocumentChangeOutput]
 
 
 class DocumentChangeReviewRequest(ApiModel):

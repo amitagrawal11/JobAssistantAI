@@ -25,15 +25,18 @@ from app.errors import DomainError
 from app.models.ai import AgentRequest
 from app.models.job import JobRequirementOutput
 from app.models.tailoring import (
+    CanonicalResumeOutput,
     CoverLetterDocumentOutput,
     DocumentChangeOutput,
     DocumentTailorRequest,
     DocumentTailorResponse,
+    GeneratedResumeResponse,
     ResumeDocumentOutput,
     TailoringAgentOutput,
 )
 from app.operations.service import OperationService
 from app.tailoring.prompts import TAILORING_PROMPT, TAILORING_PROMPT_VERSION
+from app.tailoring.resume_builder import ResumeBuilder
 
 
 class TailoringPipeline:
@@ -63,6 +66,8 @@ class TailoringPipeline:
         if not facts:
             raise DomainError(status_code=409, code="NO_VERIFIED_FACTS", message="Verify at least one candidate fact before tailoring documents.")
         valid_fact_ids = {str(fact.id) for fact in facts}
+        resume_builder = ResumeBuilder()
+        source_resume = resume_builder.build(profile.display_name, profile.email, profile.contact, facts)
 
         operation = Operation(profile_id=profile.id, operation_type="tailor_documents", status=OperationStatus.pending, progress=0, payload={"job_id": str(job.id)})
         self.session.add(operation)
@@ -97,10 +102,18 @@ class TailoringPipeline:
         resume_doc = GeneratedDocument(
             profile_id=profile.id, job_id=job.id, operation_id=operation.id,
             document_type="resume", status=RecordStatus.ready,
-            document_metadata={"provider": provider_id, "model": model, "prompt_version": TAILORING_PROMPT_VERSION},
+            document_metadata={
+                "provider": provider_id, "model": model, "prompt_version": TAILORING_PROMPT_VERSION,
+                "source_resume": source_resume.model_dump(mode="json"),
+            },
         )
         self.session.add(resume_doc)
         self.session.flush()
+        current_resume = resume_builder.apply_changes(source_resume, changes)
+        resume_doc.document_metadata = {
+            **resume_doc.document_metadata,
+            "current_resume": current_resume.model_dump(mode="json"),
+        }
         changes: list[DocumentChange] = []
         for item in result.output.resume_changes:
             source_fact_ids = [fid for fid in item.source_fact_ids if fid in valid_fact_ids]
@@ -142,6 +155,8 @@ class TailoringPipeline:
             resume=ResumeDocumentOutput(
                 id=str(resume_doc.id), status=resume_doc.status.value,
                 changes=[self._change_output(change) for change in changes],
+                source=source_resume,
+                current=current_resume,
             ),
             cover_letter=CoverLetterDocumentOutput(
                 id=str(cover_letter_doc.id), status=cover_letter_doc.status.value,
@@ -153,9 +168,42 @@ class TailoringPipeline:
 
     def review_change(self, change_id: str, status: str) -> DocumentChange:
         change = self._get(DocumentChange, change_id, "DOCUMENT_CHANGE_NOT_FOUND")
+        if status == "approved" and not change.evidence_fact_ids:
+            raise DomainError(
+                status_code=409, code="UNSUPPORTED_DOCUMENT_CHANGE",
+                message="This change has no verified supporting evidence and cannot be accepted.",
+            )
         change.status = ReviewStatus(status)
+        document = self._get(GeneratedDocument, str(change.generated_document_id), "GENERATED_DOCUMENT_NOT_FOUND")
+        source = document.document_metadata.get("source_resume")
+        if source:
+            all_changes = list(self.session.scalars(
+                select(DocumentChange).where(DocumentChange.generated_document_id == document.id)
+            ))
+            current = ResumeBuilder().apply_changes(
+                CanonicalResumeOutput.model_validate(source),
+                all_changes,
+            )
+            document.document_metadata = {**document.document_metadata, "current_resume": current.model_dump(mode="json")}
         self.session.flush()
         return change
+
+    def generated_resume(self, document_id: str) -> GeneratedResumeResponse:
+        document = self._get(GeneratedDocument, document_id, "GENERATED_DOCUMENT_NOT_FOUND")
+        if document.document_type != "resume":
+            raise DomainError(status_code=404, code="GENERATED_RESUME_NOT_FOUND", message="The generated resume was not found.")
+        job = self._get(Job, str(document.job_id), "JOB_NOT_FOUND")
+        changes = list(self.session.scalars(
+            select(DocumentChange).where(DocumentChange.generated_document_id == document.id)
+        ))
+        metadata = document.document_metadata
+        source = CanonicalResumeOutput.model_validate(metadata["source_resume"])
+        current = ResumeBuilder().apply_changes(source, changes)
+        return GeneratedResumeResponse(
+            id=str(document.id), job_id=str(job.id), title=job.title, company=job.company,
+            source_url=job.job_metadata.get("source_url"), source=source, current=current,
+            changes=[self._change_output(change) for change in changes],
+        )
 
     def _get(self, entity_type, value: str, code: str):
         try:
@@ -184,4 +232,5 @@ class TailoringPipeline:
             before=change.original_text, after=change.proposed_text,
             classification=change.classification, reason=change.rationale,
             source_fact_ids=change.evidence_fact_ids, status=change.status.value,
+            supported=bool(change.evidence_fact_ids),
         )

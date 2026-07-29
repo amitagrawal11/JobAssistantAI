@@ -62,3 +62,14 @@ class JobAnalyzeResponse(ApiModel):
     provider: str
     model: str
     prompt_version: str
+
+
+class JobUrlExtractRequest(ApiModel):
+    url: str = Field(min_length=8, max_length=2048)
+
+
+class JobUrlExtractResponse(ApiModel):
+    source_url: str
+    title: str | None
+    company: str | None
+    description: str

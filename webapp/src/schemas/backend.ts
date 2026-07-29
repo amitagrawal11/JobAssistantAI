@@ -171,6 +171,12 @@ export const jobAnalysisSchema = z.object({
   location: z.string().nullable(), source_url: z.string().nullable(), description: z.string(),
   requirements: z.array(jobRequirementSchema), provider: z.string(), model: z.string(), prompt_version: z.string(),
 });
+export const jobUrlExtractSchema = z.object({
+  source_url: z.string().url(),
+  title: z.string().nullable(),
+  company: z.string().nullable(),
+  description: z.string(),
+});
 export const matchItemBackendSchema = z.object({
   requirement_id: z.string(), requirement: z.string(), category: jobRequirementSchema.shape.category,
   classification: z.enum(['matched','partial','missing','unknown']), source_fact_ids: z.array(z.string()),
@@ -194,4 +200,5 @@ export type SourcePreview = z.infer<typeof sourcePreviewSchema>;
 export type ProviderInfo = z.infer<typeof providerInfoSchema>;
 export type AiPreference = z.infer<typeof aiPreferenceSchema>;
 export type JobAnalysis = z.infer<typeof jobAnalysisSchema>;
+export type JobUrlExtract = z.infer<typeof jobUrlExtractSchema>;
 export type BackendMatch = z.infer<typeof backendMatchSchema>;
