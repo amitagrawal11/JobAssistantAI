@@ -39,8 +39,18 @@ Do not display team, role category, industry, relative posting time, `unknown`,
 - Non-English languages use `<Language> required`.
 - Workplace, employment, experience, travel, and degree values use concise
   title-cased labels.
+- When normalized employment type is `other`, use a meaningful source
+  `commitment` such as `Permanent` or `Short Term`.
+- If normalized employment type is `other` and no meaningful commitment
+  exists, omit the employment chip.
 - Salary uses the available currency, range, and period without inventing
   missing values.
+
+## Filter behavior
+
+- Do not expose `other` as a selectable Job Type option.
+- Preserve the stored normalized value for API compatibility; this is a
+  presentation correction rather than a data migration.
 
 ## Visual treatment
 
@@ -61,8 +71,8 @@ markup.
 ## Testing
 
 - Unit-test priority, the four-chip cap, unknown suppression, English
-  suppression, sponsorship labels, salary formatting, and explicit date
-  formatting.
+  suppression, exact commitment fallback, sponsorship labels, salary
+  formatting, and explicit date formatting.
 - Update the card layout source contract to reject team and relative-date chip
   rendering.
 - Run the complete frontend test suite, production build, and lint.

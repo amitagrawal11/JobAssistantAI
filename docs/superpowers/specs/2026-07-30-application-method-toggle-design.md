@@ -19,8 +19,12 @@ cards.
 - Do not show facet counts inside the toggle.
 - Keep the toggle visible whether the filter panel is expanded or collapsed.
 - Let the toggle and Sort control wrap together on narrower screens.
-- Animate a shared selection indicator between the two segments over 200ms
-  using an ease-out transition.
+- Use a compact muted track matching the Sort control height.
+- Animate a shared white selection capsule with a subtle primary border and
+  shadow between the two segments over 260ms using a pronounced ease-out
+  curve.
+- Use primary text for the selected label and neutral text for the unselected
+  label.
 - When the selected segment is cleared, fade the indicator out.
 - Keep both labels stationary while the indicator moves.
 - Disable the movement and fade transitions when reduced motion is requested.
