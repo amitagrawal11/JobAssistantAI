@@ -13,6 +13,15 @@ AutoApplyStatusLiteral = Literal[
 AutoApplyPipelineStatusLiteral = Literal[
     "queued", "running", "paused", "completed", "completed_with_errors", "cancelled"
 ]
+AutoApplyExecutionMode = Literal["review", "automatic"]
+
+
+class AutoApplyEventOutput(ApiModel):
+    at: str
+    stage: str
+    message: str
+    attempt: int
+    error_code: str | None
 
 
 class AutoApplyQueueItemOutput(ApiModel):
@@ -27,6 +36,12 @@ class AutoApplyQueueItemOutput(ApiModel):
     note: str | None
     created_at: datetime
     position: int = 0
+    stage: str = "queued"
+    attempt_count: int = 0
+    last_error: str | None = None
+    retryable: bool = False
+    application_url: str | None = None
+    events: list[AutoApplyEventOutput] = Field(default_factory=list)
 
 
 class AutoApplyQueueStats(ApiModel):
@@ -55,6 +70,7 @@ class AutoApplyUpdateRequest(ApiModel):
 class AutoApplyPipelineCreateRequest(ApiModel):
     profile_id: str
     job_posting_ids: list[str] = Field(min_length=1, max_length=100)
+    execution_mode: AutoApplyExecutionMode = "review"
 
 
 class AutoApplyPipelineOutput(ApiModel):
@@ -68,6 +84,15 @@ class AutoApplyPipelineOutput(ApiModel):
     started_at: datetime | None
     completed_at: datetime | None
     items: list[AutoApplyQueueItemOutput]
+    execution_mode: AutoApplyExecutionMode
+
+
+class AutoApplyPipelineControlRequest(ApiModel):
+    action: Literal["pause", "resume", "cancel"]
+
+
+class AutoApplyItemActionRequest(ApiModel):
+    action: Literal["retry", "skip", "approve"]
 
 
 class AutoApplyPipelineListResponse(ApiModel):

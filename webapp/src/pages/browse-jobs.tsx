@@ -57,6 +57,7 @@ export function BrowseJobsPage() {
   const [bulkProgress, setBulkProgress] = useState<QuickApplyBatchProgress | null>(null);
   const [bulkResult, setBulkResult] = useState<{ succeeded: number; failed: number } | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [pipelineMode, setPipelineMode] = useState<'automatic' | 'review'>('automatic');
 
   const setFilters = useCallback((next: JobFilterState) => {
     setSearchParams(serializeJobFilterSearch(next), { replace: true });
@@ -81,6 +82,7 @@ export function BrowseJobsPage() {
     mutationFn: (jobIds: string[]) => createAutoApplyPipeline({
       profile_id: activeProfileId as string,
       job_posting_ids: jobIds,
+      execution_mode: pipelineMode,
     }),
     onSuccess: () => {
       setSelected(new Set());
@@ -408,8 +410,20 @@ export function BrowseJobsPage() {
                   {pipelineMutation.error instanceof BackendError ? pipelineMutation.error.message : 'Could not create the pipeline.'}
                 </p>
               ) : null}
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setPipelineMode('automatic')}
+                  className={`rounded-xl border p-3 text-left ${pipelineMode === 'automatic' ? 'border-primary bg-primary/5 ring-1 ring-primary/25' : 'border-border'}`}>
+                  <span className="block text-sm font-semibold text-foreground">Automatic</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Submit supported jobs one by one. Pause safely when login, CAPTCHA, or unsupported forms need you.</span>
+                </button>
+                <button type="button" onClick={() => setPipelineMode('review')}
+                  className={`rounded-xl border p-3 text-left ${pipelineMode === 'review' ? 'border-primary bg-primary/5 ring-1 ring-primary/25' : 'border-border'}`}>
+                  <span className="block text-sm font-semibold text-foreground">Review each</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Prepare one application at a time and wait for approval before submission.</span>
+                </button>
+              </div>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">{selected.size} job{selected.size === 1 ? '' : 's'} · Start now</p>
+                <p className="text-xs text-muted-foreground">{selected.size} job{selected.size === 1 ? '' : 's'} · {pipelineMode === 'automatic' ? 'Automatic' : 'Review each'} · Start now</p>
                 <div className="flex items-center gap-2">
                   <button type="button" onClick={() => setReviewOpen(false)} className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">Cancel</button>
                   <button

@@ -26,7 +26,10 @@ from app.models.auto_apply import (
     AutoApplyPipelineCreateRequest,
     AutoApplyPipelineListResponse,
     AutoApplyPipelineOutput,
+    AutoApplyPipelineControlRequest,
+    AutoApplyItemActionRequest,
 )
+from app.autoapply.execution import record_event
 
 
 def _parse_uuid(value: str, *, field: str) -> uuid.UUID:
@@ -136,6 +139,7 @@ class AutoApplyService:
             profile_id=pid,
             status=AutoApplyPipelineStatus.running,
             started_at=now,
+            execution_mode=request.execution_mode,
         )
         self.session.add(pipeline)
         self.session.flush()
@@ -152,9 +156,13 @@ class AutoApplyService:
                 match_score=None,
                 status=(
                     AutoApplyStatus.awaiting_approval
-                    if position == 0
+                    if position == 0 and request.execution_mode == "review"
                     else AutoApplyStatus.queued
                 ),
+                queue_metadata={
+                    "stage": "ready_for_review" if position == 0 and request.execution_mode == "review" else "queued",
+                    "attempt_count": 0, "events": [],
+                },
             )
             self.session.add(row)
             rows.append(row)
@@ -231,7 +239,11 @@ class AutoApplyService:
             )
             pipeline.completed_at = datetime.now(timezone.utc)
         elif next_row.status == AutoApplyStatus.queued:
-            next_row.status = AutoApplyStatus.awaiting_approval
+            if pipeline.execution_mode == "review":
+                next_row.status = AutoApplyStatus.awaiting_approval
+                record_event(next_row, "ready_for_review", "Application is ready for review")
+            else:
+                pipeline.status = AutoApplyPipelineStatus.running
 
     def remove(self, item_id: str) -> None:
         iid = _parse_uuid(item_id, field="item_id")
@@ -240,6 +252,61 @@ class AutoApplyService:
             raise DomainError(status_code=404, code="QUEUE_ITEM_NOT_FOUND", message="Queue item not found.")
         self.session.delete(row)
         self.session.flush()
+
+    def control_pipeline(self, pipeline_id: str, request: AutoApplyPipelineControlRequest) -> AutoApplyPipelineOutput:
+        pipeline = self.session.get(AutoApplyPipeline, _parse_uuid(pipeline_id, field="pipeline_id"))
+        if pipeline is None:
+            raise DomainError(status_code=404, code="PIPELINE_NOT_FOUND", message="Pipeline not found.")
+        if request.action == "pause":
+            pipeline.status = AutoApplyPipelineStatus.paused
+        elif request.action == "resume":
+            if pipeline.status not in {AutoApplyPipelineStatus.paused, AutoApplyPipelineStatus.queued}:
+                raise DomainError(status_code=409, code="PIPELINE_NOT_RESUMABLE", message="This pipeline cannot be resumed.")
+            pipeline.status = AutoApplyPipelineStatus.running
+        else:
+            pipeline.status = AutoApplyPipelineStatus.cancelled
+            pipeline.completed_at = datetime.now(timezone.utc)
+        self.session.flush()
+        rows = self.session.scalars(
+            select(AutoApplyQueueItem).where(AutoApplyQueueItem.pipeline_id == pipeline.id)
+            .order_by(AutoApplyQueueItem.position)
+        ).all()
+        return self._pipeline_output(pipeline, rows)
+
+    def act_on_item(self, item_id: str, request: AutoApplyItemActionRequest) -> AutoApplyQueueItemOutput:
+        row = self.session.get(AutoApplyQueueItem, _parse_uuid(item_id, field="item_id"))
+        if row is None:
+            raise DomainError(status_code=404, code="QUEUE_ITEM_NOT_FOUND", message="Queue item not found.")
+        if request.action == "skip":
+            row.status = AutoApplyStatus.skipped
+            record_event(row, "skipped", "Skipped by user")
+            if row.pipeline_id:
+                self._advance_pipeline(row.pipeline_id)
+        elif request.action == "retry":
+            metadata = dict(row.queue_metadata or {})
+            if not metadata.get("retryable") and metadata.get("stage") not in {"blocked", "failed"}:
+                raise DomainError(status_code=409, code="ITEM_NOT_RETRYABLE", message="This item is not waiting for retry.")
+            metadata.update({"stage": "queued", "retryable": False, "last_error_code": None})
+            row.queue_metadata = metadata
+            row.error = None
+            row.status = AutoApplyStatus.queued
+            record_event(row, "queued", "Queued for retry")
+            if row.pipeline_id:
+                pipeline = self.session.get(AutoApplyPipeline, row.pipeline_id)
+                if pipeline:
+                    pipeline.status = AutoApplyPipelineStatus.running
+        else:
+            metadata = dict(row.queue_metadata or {})
+            metadata.update({"stage": "queued", "approved": True})
+            row.queue_metadata = metadata
+            row.status = AutoApplyStatus.queued
+            record_event(row, "queued", "Approved for automatic submission")
+            if row.pipeline_id:
+                pipeline = self.session.get(AutoApplyPipeline, row.pipeline_id)
+                if pipeline:
+                    pipeline.status = AutoApplyPipelineStatus.running
+        self.session.flush()
+        return self._output(row)
 
     def _stats(self, pid: uuid.UUID, rows: list[AutoApplyQueueItem]) -> AutoApplyQueueStats:
         awaiting = sum(1 for r in rows if r.status == AutoApplyStatus.awaiting_approval)
@@ -268,6 +335,7 @@ class AutoApplyService:
 
     @staticmethod
     def _output(row: AutoApplyQueueItem) -> AutoApplyQueueItemOutput:
+        metadata = row.queue_metadata or {}
         return AutoApplyQueueItemOutput(
             id=str(row.id),
             profile_id=str(row.profile_id),
@@ -280,6 +348,12 @@ class AutoApplyService:
             note=row.note,
             created_at=row.created_at,
             position=row.position,
+            stage=str(metadata.get("stage", row.status.value)),
+            attempt_count=int(metadata.get("attempt_count", 0)),
+            last_error=row.error,
+            retryable=bool(metadata.get("retryable", False)),
+            application_url=metadata.get("application_url"),
+            events=metadata.get("events", []),
         )
 
     def _pipeline_output(
@@ -301,4 +375,5 @@ class AutoApplyService:
             started_at=pipeline.started_at,
             completed_at=pipeline.completed_at,
             items=[self._output(row) for row in rows],
+            execution_mode=pipeline.execution_mode,
         )

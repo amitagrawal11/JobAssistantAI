@@ -44,10 +44,31 @@ export const autoApplyPipelinesKey = (profileId: string) =>
 export function createAutoApplyPipeline(input: {
   profile_id: string;
   job_posting_ids: string[];
+  execution_mode?: 'review' | 'automatic';
 }): Promise<AutoApplyPipeline> {
   return apiRequest('/auto-apply/pipelines', autoApplyPipelineSchema, {
     method: 'POST',
     body: JSON.stringify(input),
+  });
+}
+
+export function controlAutoApplyPipeline(
+  id: string,
+  action: 'pause' | 'resume' | 'cancel',
+): Promise<AutoApplyPipeline> {
+  return apiRequest(`/auto-apply/pipelines/${id}`, autoApplyPipelineSchema, {
+    method: 'PATCH',
+    body: JSON.stringify({ action }),
+  });
+}
+
+export function actOnAutoApplyItem(
+  id: string,
+  action: 'retry' | 'skip' | 'approve',
+): Promise<AutoApplyQueueItem> {
+  return apiRequest(`/auto-apply/queue/${id}/action`, autoApplyQueueItemSchema, {
+    method: 'POST',
+    body: JSON.stringify({ action }),
   });
 }
 

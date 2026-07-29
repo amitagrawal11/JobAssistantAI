@@ -27,6 +27,9 @@ from app.errors import DomainError, domain_error_response
 from app.security import DevelopmentBearerTokenMiddleware
 from app.documents.docling_parser import DoclingParser
 from app.documents.worker import run_document_worker_once
+from app.autoapply.runner import AutoApplyRunner
+from app.db.session import get_session_factory
+from app.storage.filesystem import FilesystemStorage
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -51,6 +54,22 @@ async def _document_worker_loop(parser: DoclingParser) -> None:
         await asyncio.sleep(0 if worked else 1)
 
 
+async def _auto_apply_worker_loop() -> None:
+    while True:
+        worked = False
+        try:
+            with get_session_factory()() as session, session.begin():
+                worked = await asyncio.to_thread(
+                    AutoApplyRunner(
+                        session,
+                        FilesystemStorage(get_settings().storage_root),
+                    ).run_once
+                )
+        except Exception:
+            logger.exception("auto_apply_worker_iteration_failed")
+        await asyncio.sleep(0 if worked else 2)
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     application.state.document_parser = DoclingParser()
@@ -64,9 +83,13 @@ async def lifespan(application: FastAPI):
     document_worker_task = asyncio.create_task(
         _document_worker_loop(application.state.document_parser)
     )
+    auto_apply_worker_task = asyncio.create_task(_auto_apply_worker_loop())
     try:
         yield
     finally:
+        auto_apply_worker_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await auto_apply_worker_task
         document_worker_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await document_worker_task

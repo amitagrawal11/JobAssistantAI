@@ -16,6 +16,19 @@ export const autoApplyQueueItemSchema = z.object({
   status: autoApplyStatusSchema,
   note: z.string().nullable(),
   created_at: z.string(),
+  position: z.number().default(0),
+  stage: z.string().default('queued'),
+  attempt_count: z.number().default(0),
+  last_error: z.string().nullable().default(null),
+  retryable: z.boolean().default(false),
+  application_url: z.string().nullable().default(null),
+  events: z.array(z.object({
+    at: z.string(),
+    stage: z.string(),
+    message: z.string(),
+    attempt: z.number(),
+    error_code: z.string().nullable(),
+  })).default([]),
 });
 
 export const autoApplyQueueStatsSchema = z.object({
@@ -49,6 +62,7 @@ export const autoApplyPipelineSchema = z.object({
   started_at: z.string().nullable(),
   completed_at: z.string().nullable(),
   items: z.array(autoApplyQueueItemSchema.extend({ position: z.number() })),
+  execution_mode: z.enum(['review', 'automatic']).default('review'),
 });
 
 export const autoApplyPipelineListSchema = z.object({

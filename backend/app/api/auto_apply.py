@@ -13,6 +13,8 @@ from app.models.auto_apply import (
     AutoApplyPipelineCreateRequest,
     AutoApplyPipelineListResponse,
     AutoApplyPipelineOutput,
+    AutoApplyPipelineControlRequest,
+    AutoApplyItemActionRequest,
 )
 
 router = APIRouter(prefix="/auto-apply", tags=["auto-apply"])
@@ -38,6 +40,15 @@ def create_pipeline(
     return AutoApplyService(session).create_pipeline(request)
 
 
+@router.patch("/pipelines/{pipeline_id}", response_model=AutoApplyPipelineOutput)
+def control_pipeline(
+    pipeline_id: str,
+    request: AutoApplyPipelineControlRequest,
+    session: Session = Depends(get_session),
+) -> AutoApplyPipelineOutput:
+    return AutoApplyService(session).control_pipeline(pipeline_id, request)
+
+
 @router.get("/queue", response_model=AutoApplyQueueListResponse)
 def list_queue(
     profile_id: str = Query(..., min_length=1),
@@ -61,6 +72,15 @@ def update_queue_item(
     session: Session = Depends(get_session),
 ) -> AutoApplyQueueItemOutput:
     return AutoApplyService(session).update(item_id, request)
+
+
+@router.post("/queue/{item_id}/action", response_model=AutoApplyQueueItemOutput)
+def act_on_queue_item(
+    item_id: str,
+    request: AutoApplyItemActionRequest,
+    session: Session = Depends(get_session),
+) -> AutoApplyQueueItemOutput:
+    return AutoApplyService(session).act_on_item(item_id, request)
 
 
 @router.delete("/queue/{item_id}")

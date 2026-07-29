@@ -1,8 +1,12 @@
-import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Zap, Layers, Send, UserCheck, Target, Settings2, Eye, X, Loader2, RefreshCw, Inbox } from 'lucide-react';
-import { listAutoApplyQueue, autoApplyQueueKey, updateAutoApplyStatus, removeAutoApplyItem } from '../api/auto-apply';
-import type { AutoApplyStatus } from '../schemas/auto-apply';
+import {
+  Zap, Layers, Send, UserCheck, Target, Settings2, Eye, X, Loader2, RefreshCw,
+  Inbox, Pause, Play, StopCircle, RotateCcw, SkipForward, ExternalLink, ChevronDown, Activity,
+} from 'lucide-react';
+import {
+  listAutoApplyQueue, autoApplyQueueKey, removeAutoApplyItem, listAutoApplyPipelines,
+  autoApplyPipelinesKey, controlAutoApplyPipeline, actOnAutoApplyItem,
+} from '../api/auto-apply';
 import { useActiveProfileId } from '../lib/active-profile';
 import { BackendError } from '../api/client';
 import { PageHeader } from '../components/page-header';
@@ -29,22 +33,37 @@ const FREE_LIMIT = 25;
 export function AutoApplyPage() {
   const activeProfileId = useActiveProfileId();
   const queryClient = useQueryClient();
-  const [on, setOn] = useState(true);
 
   const query = useQuery({
     queryKey: autoApplyQueueKey(activeProfileId ?? ''),
     queryFn: () => listAutoApplyQueue(activeProfileId as string),
     enabled: !!activeProfileId,
   });
+  const pipelinesQuery = useQuery({
+    queryKey: autoApplyPipelinesKey(activeProfileId ?? ''),
+    queryFn: () => listAutoApplyPipelines(activeProfileId as string),
+    enabled: !!activeProfileId,
+    refetchInterval: 2_000,
+  });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['auto-apply', activeProfileId] });
-  const setStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: AutoApplyStatus }) => updateAutoApplyStatus(id, status),
-    onSuccess: invalidate,
+  const invalidateAll = () => {
+    void invalidate();
+    void queryClient.invalidateQueries({ queryKey: ['auto-apply-pipelines', activeProfileId] });
+  };
+  const control = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'pause' | 'resume' | 'cancel' }) => controlAutoApplyPipeline(id, action),
+    onSuccess: invalidateAll,
+  });
+  const itemAction = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'retry' | 'skip' | 'approve' }) => actOnAutoApplyItem(id, action),
+    onSuccess: invalidateAll,
   });
   const dismiss = useMutation({ mutationFn: (id: string) => removeAutoApplyItem(id), onSuccess: invalidate });
 
   const rows = query.data?.items ?? [];
+  const pipelines = pipelinesQuery.data?.items ?? [];
+  const activePipeline = pipelines.find((pipeline) => ['running', 'paused', 'queued'].includes(pipeline.status));
   const stats = query.data?.stats ?? { in_queue: 0, applied_today: 0, awaiting_approval: 0, avg_match: 0 };
   const STAT_CELLS = [
     { label: 'In queue', value: String(stats.in_queue), foot: `${stats.awaiting_approval} ready to review`, icon: Layers },
@@ -58,12 +77,16 @@ export function AutoApplyPage() {
     <PageLayout>
       <PageHeader
         title="Auto-Apply Queue"
-        description="Pathway tailors and applies to matched roles — with your approval on every submission."
+        description="Run supported applications one by one, with a complete status trail and safe handoff when a form needs you."
         actions={(
           <div className="flex items-center gap-3">
           <span className="text-[13px] font-medium text-foreground">Auto-apply</span>
-          <button role="switch" aria-checked={on} onClick={() => setOn((v) => !v)} className={'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ' + (on ? 'bg-primary' : 'bg-muted-foreground/30')}>
-            <span className="inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: on ? 'translateX(22px)' : 'translateX(2px)' }} />
+          <button role="switch" aria-checked={activePipeline?.status === 'running'} onClick={() => {
+            if (!activePipeline) return;
+            const action = activePipeline.status === 'running' ? 'pause' : 'resume';
+            control.mutate({ id: activePipeline.id, action });
+          }} disabled={!activePipeline || control.isPending} className={'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 ' + (activePipeline?.status === 'running' ? 'bg-primary' : 'bg-muted-foreground/30')}>
+            <span className="inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: activePipeline?.status === 'running' ? 'translateX(22px)' : 'translateX(2px)' }} />
           </button>
           <button className="flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"><Settings2 className="size-4.5" /></button>
           </div>
@@ -87,8 +110,8 @@ export function AutoApplyPage() {
               <div className="flex items-center gap-3">
                 <span className="flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary"><Zap className="size-5" /></span>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{on ? 'Auto-apply is active' : 'Auto-apply is paused'}</p>
-                  <p className="text-xs text-muted-foreground">Roles above 85% match are tailored and submitted automatically. Everything else waits for your review.</p>
+                  <p className="text-sm font-semibold text-foreground">{activePipeline ? `Pipeline is ${activePipeline.status.replaceAll('_', ' ')}` : 'No active pipeline'}</p>
+                  <p className="text-xs text-muted-foreground">Supported applications run one at a time. Login, CAPTCHA, custom questions, and unsupported forms pause safely for you.</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -112,6 +135,75 @@ export function AutoApplyPage() {
               ))}
             </div>
           </div>
+
+          {/* execution pipeline */}
+          {activePipeline ? (
+            <section className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary"><Activity className="size-4" /></span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-sm font-semibold text-foreground">Active execution pipeline</h2>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">{activePipeline.execution_mode}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{activePipeline.completed_count} of {activePipeline.total_count} finished · {activePipeline.failed_count} skipped or failed</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {activePipeline.status === 'running' ? (
+                    <button onClick={() => control.mutate({ id: activePipeline.id, action: 'pause' })} disabled={control.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold hover:bg-muted"><Pause className="size-3.5" /> Pause</button>
+                  ) : (
+                    <button onClick={() => control.mutate({ id: activePipeline.id, action: 'resume' })} disabled={control.isPending}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground"><Play className="size-3.5" /> Resume</button>
+                  )}
+                  <button onClick={() => control.mutate({ id: activePipeline.id, action: 'cancel' })} disabled={control.isPending}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"><StopCircle className="size-3.5" /> Cancel</button>
+                </div>
+              </header>
+              <div className="h-1.5 bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${activePipeline.total_count ? Math.round((activePipeline.completed_count / activePipeline.total_count) * 100) : 0}%` }} /></div>
+              <div>
+                {activePipeline.items.map((item) => {
+                  const actionable = ['blocked', 'failed', 'retry_wait', 'ready_for_review'].includes(item.stage);
+                  return (
+                    <details key={item.id} className="group border-b border-border last:border-0">
+                      <summary className="grid cursor-pointer list-none grid-cols-[30px_minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-3 hover:bg-muted/20">
+                        <span className="grid size-7 place-items-center rounded-full bg-muted text-xs font-bold text-muted-foreground">{item.position + 1}</span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">{item.role}</p>
+                          <p className="truncate text-xs text-muted-foreground">{item.company}{item.attempt_count ? ` · Attempt ${item.attempt_count}/3` : ''}</p>
+                        </div>
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${item.stage === 'submitted' ? 'bg-emerald-50 text-emerald-700' : actionable ? 'bg-amber-50 text-amber-700' : item.stage === 'queued' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>{item.stage.replaceAll('_', ' ')}</span>
+                        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="border-t border-border bg-muted/15 px-4 py-3">
+                        {item.last_error ? <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">{item.last_error}</p> : null}
+                        <div className="space-y-2">
+                          {item.events.map((event, index) => (
+                            <div key={`${event.at}-${index}`} className="grid grid-cols-[8px_1fr_auto] items-start gap-2 text-xs">
+                              <span className="mt-1.5 size-2 rounded-full bg-primary" />
+                              <div><p className="font-medium text-foreground">{event.message}</p><p className="text-muted-foreground">{event.stage.replaceAll('_', ' ')}{event.error_code ? ` · ${event.error_code}` : ''}</p></div>
+                              <time className="text-[10px] text-muted-foreground">{new Date(event.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+                            </div>
+                          ))}
+                          {item.events.length === 0 ? <p className="text-xs text-muted-foreground">Waiting in queue.</p> : null}
+                        </div>
+                        {actionable ? (
+                          <div className="mt-3 flex flex-wrap justify-end gap-2">
+                            {item.application_url ? <a href={item.application_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold"><ExternalLink className="size-3.5" /> Open application</a> : null}
+                            {item.stage === 'ready_for_review' ? <button onClick={() => itemAction.mutate({ id: item.id, action: 'approve' })} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground"><Eye className="size-3.5" /> Approve submission</button> : null}
+                            {item.stage !== 'ready_for_review' ? <button onClick={() => itemAction.mutate({ id: item.id, action: 'retry' })} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold"><RotateCcw className="size-3.5" /> Retry</button> : null}
+                            <button onClick={() => itemAction.mutate({ id: item.id, action: 'skip' })} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold"><SkipForward className="size-3.5" /> Skip</button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
           {/* queue */}
           <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
@@ -148,7 +240,7 @@ export function AutoApplyPage() {
                   <span className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                   <span className="flex items-center justify-end gap-1.5">
                     {r.status !== 'submitted' && r.status !== 'skipped' ? (
-                      <button onClick={() => setStatus.mutate({ id: r.id, status: 'submitted' })} disabled={setStatus.isPending}
+                      <button onClick={() => itemAction.mutate({ id: r.id, action: 'approve' })} disabled={itemAction.isPending}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-[12px] font-semibold text-primary hover:bg-primary/15 disabled:opacity-50"><Eye className="size-3.5" /> Approve</button>
                     ) : null}
                     <button onClick={() => dismiss.mutate(r.id)} disabled={dismiss.isPending} className="flex size-7 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"><X className="size-3.5" /></button>

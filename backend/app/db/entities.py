@@ -407,6 +407,7 @@ class AutoApplyPipeline(IdentifierMixin, TimestampMixin, Base):
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    execution_mode: Mapped[str] = mapped_column(String(20), nullable=False, default="review")
 
 
 class AutoApplyQueueItem(IdentifierMixin, TimestampMixin, Base):
