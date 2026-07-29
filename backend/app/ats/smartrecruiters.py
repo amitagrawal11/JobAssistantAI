@@ -5,6 +5,10 @@ from datetime import datetime
 import httpx
 
 from app.ats.base import NormalizedPosting
+from app.ats.normalization import (
+    normalize_employment_type, normalize_experience_level, normalize_role_category,
+    normalize_workplace_type, source_fingerprint,
+)
 
 _PAGE_SIZE = 100
 
@@ -48,17 +52,27 @@ class SmartRecruitersConnector:
         employment = item.get("typeOfEmployment") or {}
         job_id = str(item.get("id"))
         posted_at = SmartRecruitersConnector._parse_datetime(item.get("releasedDate"))
+        title = str(item.get("name", ""))
+        team = department.get("label")
+        location_text = location.get("fullLocation")
+        commitment = employment.get("label")
         return NormalizedPosting(
             vendor="smartrecruiters",
             vendor_job_id=job_id,
             company=(item.get("company") or {}).get("name") or company,
-            title=str(item.get("name", "")),
-            team=department.get("label"),
-            location=location.get("fullLocation"),
-            commitment=employment.get("label"),
+            title=title,
+            team=team,
+            location=location_text,
+            commitment=commitment,
             hosted_url=f"https://jobs.smartrecruiters.com/{company}/{job_id}",
             apply_url=None,
             posted_at=posted_at,
+            source_department=team,
+            workplace_type=normalize_workplace_type(item.get("workplaceType"), location_text),
+            employment_type=normalize_employment_type(commitment),
+            role_category=normalize_role_category(title, team),
+            experience_level=normalize_experience_level(title, (item.get("experienceLevel") or {}).get("label")),
+            source_fingerprint=source_fingerprint(title, location_text, commitment),
         )
 
     @staticmethod

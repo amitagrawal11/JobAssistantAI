@@ -10,6 +10,9 @@ from app.models.common import ApiModel
 AutoApplyStatusLiteral = Literal[
     "queued", "awaiting_approval", "tailoring", "submitted", "skipped"
 ]
+AutoApplyPipelineStatusLiteral = Literal[
+    "queued", "running", "paused", "completed", "completed_with_errors", "cancelled"
+]
 
 
 class AutoApplyQueueItemOutput(ApiModel):
@@ -23,6 +26,7 @@ class AutoApplyQueueItemOutput(ApiModel):
     status: AutoApplyStatusLiteral
     note: str | None
     created_at: datetime
+    position: int = 0
 
 
 class AutoApplyQueueStats(ApiModel):
@@ -46,3 +50,26 @@ class AutoApplyEnqueueRequest(ApiModel):
 
 class AutoApplyUpdateRequest(ApiModel):
     status: AutoApplyStatusLiteral
+
+
+class AutoApplyPipelineCreateRequest(ApiModel):
+    profile_id: str
+    job_posting_ids: list[str] = Field(min_length=1, max_length=100)
+
+
+class AutoApplyPipelineOutput(ApiModel):
+    id: str
+    profile_id: str
+    status: AutoApplyPipelineStatusLiteral
+    total_count: int
+    completed_count: int
+    failed_count: int
+    created_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+    items: list[AutoApplyQueueItemOutput]
+
+
+class AutoApplyPipelineListResponse(ApiModel):
+    items: list[AutoApplyPipelineOutput]
+    total: int

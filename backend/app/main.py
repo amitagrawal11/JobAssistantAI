@@ -26,6 +26,7 @@ from app.config import get_settings
 from app.errors import DomainError, domain_error_response
 from app.security import DevelopmentBearerTokenMiddleware
 from app.documents.docling_parser import DoclingParser
+from app.documents.worker import run_document_worker_once
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,6 +41,16 @@ async def _ats_sync_loop(interval_seconds: int) -> None:
             logger.exception("ats_sync_loop_iteration_failed")
 
 
+async def _document_worker_loop(parser: DoclingParser) -> None:
+    while True:
+        try:
+            worked = await asyncio.to_thread(run_document_worker_once, parser)
+        except Exception:
+            logger.exception("document_worker_iteration_failed")
+            worked = False
+        await asyncio.sleep(0 if worked else 1)
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     application.state.document_parser = DoclingParser()
@@ -50,9 +61,15 @@ async def lifespan(application: FastAPI):
     if settings.ats_sync_on_startup:
         asyncio.create_task(asyncio.to_thread(run_sync_once))
     sync_task = asyncio.create_task(_ats_sync_loop(settings.ats_sync_interval_seconds))
+    document_worker_task = asyncio.create_task(
+        _document_worker_loop(application.state.document_parser)
+    )
     try:
         yield
     finally:
+        document_worker_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await document_worker_task
         sync_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await sync_task

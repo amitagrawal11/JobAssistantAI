@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   UploadCloud, FileText, Loader2, Sparkles, RefreshCw, Pencil, Plus,
   GraduationCap, Briefcase, Rocket, ListPlus, Trash2,
@@ -7,12 +8,20 @@ import {
 } from 'lucide-react';
 import { addProfileFact, createProfile, deleteProfile, deleteProfileFact, getProfile, listProfiles, profileQueryKey, setDefaultProfile, updateProfile, verifyProfileFacts } from '../api/profiles';
 import type { ProfileUpdate } from '../schemas/backend';
-import { uploadDocument, executeParse } from '../api/documents';
+import { reprocessDocument, uploadDocument } from '../api/documents';
 import { useActiveProfileId, setActiveProfileId, clearActiveProfileId } from '../lib/active-profile';
-import { markParsing, clearParsing, useIsParsing } from '../lib/parsing-state';
+import {
+  hasExtractionSlot,
+  hasProcessingFailed,
+  isProcessingActive,
+  isProfileSelectable,
+} from '../features/profile-processing/profile-processing';
+import { ProfileProcessingCard } from '../features/profile-processing/profile-processing-card';
 import { MonthYearRange, Combobox, COMMON_TITLES, COUNTRIES, VISA_TYPES, NOTICE_PERIODS, EARLIEST_START, GENDERS, PRONOUNS, ETHNICITIES, SOURCES, KNOWN_SKILLS } from '../components/inputs';
 import { BackendError } from '../api/client';
 import type { BackendProfile } from '../schemas/backend';
+import { PageHeader } from '../components/page-header';
+import { PageLayout, PageScrollArea } from '../components/page-layout';
 
 type Fact = BackendProfile['facts'][number];
 
@@ -75,23 +84,14 @@ function Onboarding({ onCreated, onCancel }: { onCreated: (id: string) => void; 
       setPhase('creating');
       const profile = await createProfile({ display_name: profileName.trim(), email: null });
       setPhase('uploading');
-      const up = await uploadDocument(profile.id, file as File);
-      return { profile, operationId: up.operation_id };
+      await uploadDocument(profile.id, file as File);
+      return { profile };
     },
-    // Don't block on extraction: open the profile (which shows shimmering
-    // section skeletons) immediately and let the parse finish in the background.
-    onSuccess: async ({ profile, operationId }) => {
-      markParsing(profile.id);
-      queryClient.setQueryData(profileQueryKey(profile.id), profile); // seed so the skeleton shows instantly
+    // The backend owns extraction after upload. Keep this screen in place and
+    // observe the durable operation through the profile query.
+    onSuccess: async ({ profile }) => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
-      await setActiveProfileId(profile.id);
       onCreated(profile.id);
-      executeParse(operationId)
-        .catch(() => { /* surfaced via readiness on the profile page */ })
-        .finally(async () => {
-          await queryClient.invalidateQueries({ queryKey: profileQueryKey(profile.id) });
-          clearParsing(profile.id);
-        });
     },
     onSettled: () => setPhase('idle'),
   });
@@ -100,12 +100,16 @@ function Onboarding({ onCreated, onCancel }: { onCreated: (id: string) => void; 
   const canSubmit = profileName.trim().length > 0 && !!file && !busy;
 
   return (
-    <div className="mx-auto w-full max-w-[640px]">
-      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">New profile</p>
-      <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">Create a profile</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Name it and upload a resume — Pathway extracts your details automatically.</p>
+    <PageLayout className="mx-auto max-w-[640px]">
+      <PageHeader
+        title="Create a profile"
+        description="Name it and upload a resume — Pathway extracts your details automatically."
+        backLabel={onCancel ? 'Profiles' : undefined}
+        onBack={onCancel}
+      />
 
-      <section className="mt-5 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+      <PageScrollArea className="mt-5 pr-1">
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
         <label className="block text-[13px] font-medium text-foreground">
           Profile name
           <input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="e.g. Engineering Manager V1" disabled={busy}
@@ -137,7 +141,8 @@ function Onboarding({ onCreated, onCancel }: { onCreated: (id: string) => void; 
           {busy ? <span className="text-[13px] text-muted-foreground">{PHASE_LABEL[phase]}</span> : null}
         </div>
       </section>
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }
 
@@ -1057,18 +1062,31 @@ function SkelCard({ lines }: { lines: number }) {
   );
 }
 
-function ProfileParsingSkeleton({ name, filename }: { name: string; filename: string | null }) {
+function ProfileParsingSkeleton({
+  name,
+  filename,
+  onBack,
+}: {
+  name: string;
+  filename: string | null;
+  onBack: () => void;
+}) {
   return (
-    <div className="w-full">
-      <div className="min-w-0">
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"><FolderOpen className="size-3" /> {name}</span>
-        <div className="mt-2 h-7 w-56 rounded bg-muted animate-pulse" />
-        <div className="mt-2.5 h-3.5 w-72 rounded bg-muted animate-pulse" />
-        {filename ? (
-          <span className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[12px] text-muted-foreground" title={filename}>
+    <PageLayout>
+      <PageHeader
+        title={name}
+        description={filename ? (
+          <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-[12px] text-muted-foreground" title={filename}>
             <FileText className="size-3.5 shrink-0 text-primary" /> <span className="truncate">{filename}</span>
           </span>
-        ) : null}
+        ) : 'Extracting profile details…'}
+        backLabel="Profiles"
+        onBack={onBack}
+      />
+      <PageScrollArea className="mt-3 pr-1">
+      <div className="min-w-0">
+        <div className="mt-2 h-7 w-56 rounded bg-muted animate-pulse" />
+        <div className="mt-2.5 h-3.5 w-72 rounded bg-muted animate-pulse" />
       </div>
 
       <div className="mt-4 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-[13px] font-medium text-primary">
@@ -1087,18 +1105,22 @@ function ProfileParsingSkeleton({ name, filename }: { name: string; filename: st
           <SkelCard lines={3} />
         </div>
       </div>
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }
 
 function ProfileView({ profileId }: { profileId: string }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState<string | null>(null);
-  const parsing = useIsParsing(profileId);
   const profileQ = useQuery({
     queryKey: profileQueryKey(profileId),
     queryFn: () => getProfile(profileId),
-    refetchInterval: parsing ? 1500 : false,
+    refetchInterval: (query) =>
+      isProcessingActive((query.state.data as BackendProfile | undefined)?.processing ?? null)
+        ? 1500
+        : false,
   });
 
   const factsMut = useMutation({
@@ -1154,10 +1176,18 @@ function ProfileView({ profileId }: { profileId: string }) {
     );
   }
 
+  const parsing = isProcessingActive(profileQ.data.processing);
+
   // While the resume is still being extracted and nothing has landed yet, show
   // shimmering section skeletons instead of an empty page or a blank spinner.
   if (parsing && profileQ.data.facts.length === 0) {
-    return <ProfileParsingSkeleton name={profileQ.data.display_name} filename={profileQ.data.source_filename} />;
+    return (
+      <ProfileParsingSkeleton
+        name={profileQ.data.display_name}
+        filename={profileQ.data.source_filename}
+        onBack={() => navigate('/profile?manage=1')}
+      />
+    );
   }
 
   const p = profileQ.data;
@@ -1227,10 +1257,14 @@ function ProfileView({ profileId }: { profileId: string }) {
   };
 
   return (
-    <div className="w-full">
+    <PageLayout>
+      <PageHeader
+        title={personName ? stripRefs(personName) : p.display_name}
+        backLabel="Profiles"
+        onBack={() => navigate('/profile?manage=1')}
+      />
+      <PageScrollArea className="mt-3 pr-1">
       <div className="min-w-0">
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"><FolderOpen className="size-3" /> {p.display_name}</span>
-        <h1 className="mt-1.5 text-[26px] font-bold tracking-[-0.02em] text-foreground">{personName ? stripRefs(personName) : p.display_name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
           {editing === 'title' ? (
             <TitleEditor initial={currentTitle ? stripRefs(currentTitle) : ''} options={titleOptions} saving={factsMut.isPending || addFactMut.isPending}
@@ -1373,7 +1407,8 @@ function ProfileView({ profileId }: { profileId: string }) {
       </div>
 
       {factsMut.isError ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{factsMut.error instanceof BackendError ? factsMut.error.message : 'Could not save changes.'}</p> : null}
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }
 
@@ -1458,9 +1493,19 @@ function ProfileGridCard({
 
 function ProfilesView() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
   const activeProfileId = useActiveProfileId();
-  const profilesQ = useQuery({ queryKey: ['profiles'], queryFn: listProfiles });
+  const profilesQ = useQuery({
+    queryKey: ['profiles'],
+    queryFn: listProfiles,
+    refetchInterval: (query) =>
+      ((query.state.data as BackendProfile[] | undefined) ?? []).some((profile) =>
+        isProcessingActive(profile.processing),
+      )
+        ? 1500
+        : false,
+  });
 
   const renameMut = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => updateProfile(id, { display_name: name }),
@@ -1483,46 +1528,130 @@ function ProfilesView() {
       queryClient.setQueryData(profileQueryKey(updated.id), updated);
     },
   });
+  const retryMut = useMutation({
+    mutationFn: (documentId: string) => reprocessDocument(documentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['profiles'] }),
+  });
   const pendingId = (deleteMut.isPending ? deleteMut.variables : undefined) as string | undefined;
 
-  if (creating) return <Onboarding onCreated={() => setCreating(false)} onCancel={() => setCreating(false)} />;
+  if (creating) return <Onboarding onCreated={(id) => navigate(`/profile?creating=${id}`, { replace: true })} onCancel={() => setCreating(false)} />;
 
   if (profilesQ.isLoading) return <div className="grid min-h-[300px] place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
 
   const profiles = profilesQ.data ?? [];
   const empty = profiles.length === 0;
+  const extractionSlotAvailable = hasExtractionSlot(profiles);
 
   return (
-    <div className="w-full">
-      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Profiles</p>
-      <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">{empty ? 'Create your first profile' : 'Choose a profile'}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {empty ? 'Each profile has its own resume, details, and tailored applications.' : 'Pick a profile to open, or create a new one for a different role or resume.'}
-      </p>
+    <PageLayout>
+      <PageHeader
+        title={empty ? 'Create your first profile' : 'Choose a profile'}
+        description={empty
+          ? 'Each profile has its own resume, details, and tailored applications.'
+          : 'Pick a profile to open, or create a new one for a different role or resume.'}
+      />
 
-      {deleteMut.isError ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-[13px] text-rose-700">Couldn’t delete that profile. Please try again.</p> : null}
+      <PageScrollArea className="mt-5 pr-1">
+      {deleteMut.isError ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-[13px] text-rose-700">Couldn’t delete that profile. Please try again.</p> : null}
 
-      <div className="mt-5 grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+      <div className={`${deleteMut.isError ? 'mt-3' : ''} grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]`}>
         {profiles.map((pr) => (
-          <ProfileGridCard key={pr.id} profile={pr}
-            busy={(renameMut.isPending && renameMut.variables?.id === pr.id) || pendingId === pr.id || (setDefaultMut.isPending && setDefaultMut.variables === pr.id)}
-            onOpen={() => { void setActiveProfileId(pr.id); }}
-            onRename={(name) => renameMut.mutate({ id: pr.id, name })}
-            onDelete={() => deleteMut.mutate(pr.id)}
-            onSetDefault={() => setDefaultMut.mutate(pr.id)} />
+          isProcessingActive(pr.processing) || hasProcessingFailed(pr.processing) ? (
+            <div id={`profile-${pr.id}`} key={pr.id}>
+              <ProfileProcessingCard
+                profile={pr}
+                busy={retryMut.isPending || pendingId === pr.id}
+                onRetry={pr.processing?.source_document_id ? () => retryMut.mutate(pr.processing!.source_document_id!) : undefined}
+                onDelete={hasProcessingFailed(pr.processing) ? () => deleteMut.mutate(pr.id) : undefined}
+              />
+            </div>
+          ) : (
+            <ProfileGridCard key={pr.id} profile={pr}
+              busy={(renameMut.isPending && renameMut.variables?.id === pr.id) || pendingId === pr.id || (setDefaultMut.isPending && setDefaultMut.variables === pr.id)}
+              onOpen={() => { void setActiveProfileId(pr.id).then(() => navigate('/profile')); }}
+              onRename={(name) => renameMut.mutate({ id: pr.id, name })}
+              onDelete={() => deleteMut.mutate(pr.id)}
+              onSetDefault={() => setDefaultMut.mutate(pr.id)} />
+          )
         ))}
-        <button type="button" onClick={() => setCreating(true)}
-          className="flex min-h-[141px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border p-4 text-center text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary">
+        <button type="button" onClick={() => extractionSlotAvailable && setCreating(true)} disabled={!extractionSlotAvailable}
+          title={extractionSlotAvailable ? undefined : 'One profile is already being prepared.'}
+          className="flex min-h-[141px] flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border p-4 text-center text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:border-border disabled:hover:bg-transparent disabled:hover:text-muted-foreground">
           <span className="grid size-9 place-items-center rounded-lg bg-muted"><Plus className="size-4.5" /></span>
           <span className="text-[13px] font-semibold">New profile</span>
+          {!extractionSlotAvailable ? <span className="text-[11px]">One profile is already being prepared.</span> : null}
         </button>
       </div>
+      </PageScrollArea>
+    </PageLayout>
+  );
+}
+
+function CreationProgress({ profileId }: { profileId: string }) {
+  const activeProfileId = useActiveProfileId();
+  const navigate = useNavigate();
+  const profileQ = useQuery({
+    queryKey: profileQueryKey(profileId),
+    queryFn: () => getProfile(profileId),
+    refetchInterval: (query) =>
+      isProcessingActive((query.state.data as BackendProfile | undefined)?.processing ?? null)
+        ? 1500
+        : false,
+  });
+  const profilesQ = useQuery({ queryKey: ['profiles'], queryFn: listProfiles });
+
+  useEffect(() => {
+    const profile = profileQ.data;
+    if (!profile || !isProfileSelectable(profile) || activeProfileId) return;
+    void setActiveProfileId(profile.id);
+  }, [activeProfileId, profileQ.data]);
+
+  if (profileQ.isError) {
+    return <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">Couldn’t restore profile processing. Open Profiles to try again.</p>;
+  }
+  if (profileQ.isLoading || !profileQ.data) {
+    return <div className="grid min-h-[300px] place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  const profile = profileQ.data;
+  if (isProcessingActive(profile.processing) || hasProcessingFailed(profile.processing)) {
+    return (
+      <PageLayout>
+        <PageHeader
+          title="Preparing your profile"
+          description="You can navigate anywhere in Pathway while this continues."
+          backLabel="Profiles"
+          onBack={() => navigate('/profile?manage=1')}
+        />
+        <PageScrollArea className="mt-5 pr-1">
+          <ProfileProcessingCard profile={profile} full />
+        </PageScrollArea>
+      </PageLayout>
+    );
+  }
+
+  const hadOtherReadyProfile = (profilesQ.data ?? []).some(
+    (candidate) => candidate.id !== profile.id && isProfileSelectable(candidate),
+  );
+  return (
+    <div className="w-full">
+      {hadOtherReadyProfile ? (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-800">
+          Profile ready. Your previous active profile remains selected.
+        </div>
+      ) : null}
+      <ProfileView profileId={profile.id} />
     </div>
   );
 }
 
 export function ProfilePage() {
   const activeProfileId = useActiveProfileId();
+  const [searchParams] = useSearchParams();
   if (activeProfileId === undefined) return <div className="grid min-h-[300px] place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
-  return activeProfileId ? <ProfileView profileId={activeProfileId} /> : <ProfilesView />;
+  const creatingProfileId = searchParams.get('creating');
+  if (creatingProfileId) return <CreationProgress profileId={creatingProfileId} />;
+  return searchParams.get('manage') === '1' || !activeProfileId
+    ? <ProfilesView />
+    : <ProfileView profileId={activeProfileId} />;
 }

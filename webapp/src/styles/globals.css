@@ -295,3 +295,17 @@ body { margin: 0; background: var(--background); color: var(--foreground); }
   --color-success-foreground: var(--success-foreground);
   --color-success: var(--success);
 }
+@keyframes profile-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.profile-shimmer {
+  background-image: linear-gradient(90deg, transparent 20%, rgb(255 255 255 / 0.72) 50%, transparent 80%);
+  background-size: 200% 100%;
+  animation: profile-shimmer 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-shimmer { animation: none; }
+}

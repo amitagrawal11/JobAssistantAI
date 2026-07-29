@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db.session import get_session
 from app.documents.service import DocumentProcessingService
+from app.operations.service import OperationService
 from app.errors import DomainError
 from app.models.document import DocumentParseResponse
 from app.storage.filesystem import FilesystemStorage
@@ -30,6 +31,7 @@ def execute_operation(
             code="INVALID_IDENTIFIER",
             message="operation_id must be a valid UUID.",
         ) from error
+    OperationService(session).claim(parsed_id)
     parse_run = DocumentProcessingService(
         session=session,
         storage=FilesystemStorage(get_settings().storage_root),

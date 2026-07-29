@@ -3,8 +3,8 @@
 # frontend (Vite dev server) together for local development.
 #
 # Usage:
-#   ./dev.sh              start backend (if not already up) + frontend dev server
-#   ./dev.sh --down        stop the backend containers and exit
+#   ./start.sh              start backend (if not already up) + webapp dev server
+#   ./start.sh --down       stop the backend containers and exit
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,6 +16,17 @@ if [[ "${1:-}" == "--down" ]]; then
   echo "==> Stopping backend containers..."
   (cd "$BACKEND_DIR" && docker compose down)
   exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  echo "!! Docker is installed but its daemon is not available."
+  echo "   Start Docker Desktop, wait until it is ready, then rerun ./start.sh."
+  exit 1
+fi
+
+if [[ ! -x "$FRONTEND_DIR/node_modules/.bin/vite" ]]; then
+  echo "==> Installing webapp dependencies from package-lock.json..."
+  (cd "$FRONTEND_DIR" && npm ci --include=dev)
 fi
 
 echo "==> Starting backend (db + api)..."
@@ -40,6 +51,7 @@ echo "==> Applying database migrations (alembic upgrade head)..."
 (cd "$BACKEND_DIR" && docker compose exec -T api alembic upgrade head)
 
 echo "==> Starting webapp dev server (npm run dev)..."
-echo "    Backend stays running after you stop this. Use './dev.sh --down' to stop it."
+echo "    Open http://localhost:5173 in your browser."
+echo "    Backend stays running after you stop this. Use './start.sh --down' to stop it."
 cd "$FRONTEND_DIR"
 exec npm run dev

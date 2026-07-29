@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     database_url: str
     storage_root: Path
     development_bearer_token: str
-    extension_origin_regex: str = r"^http://localhost(:\d+)?$"
+    extension_origin_regex: str = r"^http://(localhost|127\.0\.0\.1)(:\d+)?$"
     ai_provider: str = "ollama"
     openai_api_key: str = ""
     openai_models: str = ""

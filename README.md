@@ -1,48 +1,54 @@
-# Job Copilot
+# Pathway
 
-Job Copilot is a Chrome extension proof of concept for reviewing and preparing job applications while keeping the candidate in control. Phase 1 demonstrates the complete experience with fictional, browser-local mock data.
-
-## Phase 1 surfaces
-
-- **Side panel:** Scan → Match → Tailor → Fill → Confirm.
-- **Dashboard:** Profile, Documents, Applications, and Settings.
-
-Phase 1 does not read the active page, parse resumes, call AI services, create PDFs, fill employer forms, or communicate with a backend.
+Pathway is a local-first job assistant with a React web application and a
+FastAPI backend. The backend persists data in PostgreSQL, parses resumes with
+Docling, and can use a locally running Ollama model for AI-assisted features.
 
 ## Requirements
 
-- Node.js 20 or newer.
-- pnpm 10 or newer.
-- Google Chrome with extension Developer mode enabled.
+- Docker Desktop
+- Node.js 20 or newer
+- npm
+- Optional: Ollama with a configured model for AI-assisted extraction and
+  tailoring. The rest of the application runs without it.
 
-## Development
+## Run locally
 
-```bash
-cd extension
-pnpm install
-pnpm dev
-```
-
-## Production build
+Start Docker Desktop, then run:
 
 ```bash
-cd extension
-pnpm validate:fixtures
-pnpm validate:workflow
-pnpm validate:sync
-pnpm compile
-pnpm build
-pnpm inspect:manifest
+./start.sh
 ```
 
-Load `extension/.output/chrome-mv3` from `chrome://extensions` → **Developer mode** → **Load unpacked**. On macOS, press `Command + Shift + .` in the directory picker if `.output` is hidden.
+The launcher installs missing webapp dependencies, starts PostgreSQL and the
+API, waits for backend health, applies database migrations, and starts Vite.
+Open [http://localhost:5173](http://localhost:5173).
 
-After rebuilding an already loaded copy, select **Reload** on the Job Copilot card in `chrome://extensions` and reopen the side panel.
+The API health endpoint is
+[http://localhost:8000/health](http://localhost:8000/health).
 
-## Phase 1 data
+Stop the Vite process with `Ctrl+C`. Stop the backend containers with:
 
-The demonstration uses the fictional candidate Jordan Lee, fictional company Northstar Labs, and `.example.test` URLs. Durable demo decisions are stored in extension-local browser storage. Use Dashboard → Settings → Reset mock data to restore the seed state.
+```bash
+./start.sh --down
+```
 
-## Manual acceptance
+## Validate
 
-Follow [the Phase 1 checklist](docs/manual-testing/phase-1-checklist.md). Automated test frameworks are intentionally excluded from the initial POC by the locked product specification.
+```bash
+cd webapp
+npm ci --include=dev
+npm run build
+npm run lint
+
+cd ../backend
+docker compose exec -T api python scripts/validate_config.py
+docker compose exec -T api python scripts/validate_migrations.py
+```
+
+Backend configuration defaults are documented in
+[`backend/.env.example`](backend/.env.example). Copy it to `backend/.env` only
+when you need to override those defaults.
+
+Historical product specifications and implementation plans are retained under
+[`docs/`](docs/).

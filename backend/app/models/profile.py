@@ -11,6 +11,24 @@ from app.models.common import ApiModel, SourceReference
 ProfileReadinessValue = Literal["uploaded", "needs_review", "ready", "parse_failed"]
 
 
+class ProfileStageTiming(ApiModel):
+    started_at: datetime
+    completed_at: datetime | None
+    duration_ms: int
+
+
+class ProfileProcessing(ApiModel):
+    operation_id: str
+    source_document_id: str | None
+    status: Literal["pending", "running", "succeeded", "failed"]
+    stage: Literal["uploading", "reading", "extracting", "complete", "failed"]
+    error_code: str | None
+    retryable: bool
+    started_at: datetime | None
+    completed_at: datetime | None
+    stage_timings: dict[str, ProfileStageTiming]
+
+
 class ProfileCreate(ApiModel):
     display_name: str = Field(min_length=1, max_length=200)
     email: str | None = Field(default=None, max_length=320)
@@ -61,6 +79,7 @@ class ProfileResponse(ApiModel):
     source_comparison_resolved: bool
     is_default: bool
     source_filename: str | None
+    processing: ProfileProcessing | None
     ai_preferences: dict[str, str]
     contact: dict[str, Any]
     application_defaults: dict[str, Any]

@@ -7,6 +7,7 @@ import re
 import shutil
 import tempfile
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -14,6 +15,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings, get_settings
 from app.db.entities import (
     Operation,
+    OperationStage,
     OperationStatus,
     ParseRun,
     Profile,
@@ -112,6 +114,7 @@ class DocumentService:
                 message="The requested profile was not found.",
             )
 
+        OperationService(self.session).require_extraction_slot()
         validated = validate_document(
             filename=filename,
             media_type=media_type,
@@ -136,12 +139,31 @@ class DocumentService:
             )
             self.session.add(document)
             self.session.flush()
+            upload_completed_at = datetime.now(timezone.utc)
             operation = Operation(
                 profile_id=profile.id,
                 operation_type="parse_document",
                 status=OperationStatus.pending,
+                stage=OperationStage.uploading,
                 progress=0,
-                payload={"source_document_id": str(document.id)},
+                payload={
+                    "source_document_id": str(document.id),
+                    "stage_timings": {
+                        "uploading": {
+                            "started_at": profile.created_at.isoformat(),
+                            "completed_at": upload_completed_at.isoformat(),
+                            "duration_ms": max(
+                                0,
+                                round(
+                                    (
+                                        upload_completed_at - profile.created_at
+                                    ).total_seconds()
+                                    * 1000
+                                ),
+                            ),
+                        }
+                    },
+                },
             )
             self.session.add(operation)
             profile.readiness = ProfileReadiness.uploaded
@@ -166,14 +188,22 @@ class DocumentService:
         document = self.session.get(SourceDocument, document_id)
         if document is None:
             raise DomainError(status_code=404, code="SOURCE_DOCUMENT_NOT_FOUND", message="The requested source document was not found.")
+        OperationService(self.session).require_extraction_slot()
         operation = Operation(
             profile_id=document.profile_id,
             operation_type="parse_document",
             status=OperationStatus.pending,
+            stage=OperationStage.reading,
             progress=0,
             payload={"source_document_id": str(document.id)},
         )
         self.session.add(operation)
+        profile = self.session.get(Profile, document.profile_id)
+        if profile is not None:
+            profile.status = RecordStatus.processing
+            profile.readiness = ProfileReadiness.uploaded
+            profile.source_comparison_resolved = False
+        document.status = RecordStatus.pending
         self.session.flush()
         return DocumentReprocessResponse(document_id=str(document.id), operation_id=str(operation.id), status="pending")
 
@@ -185,14 +215,16 @@ class DocumentProcessingService:
         session: Session,
         storage: ObjectStorage,
         parser: DocumentParser,
+        publish_stages: bool = False,
     ) -> None:
         self.session = session
         self.storage = storage
         self.parser = parser
+        self.publish_stages = publish_stages
         self.operations = OperationService(session)
 
     def process(self, operation_id: uuid.UUID) -> ParseRun:
-        operation = self.operations.require_pending(operation_id)
+        operation = self.operations.require_running(operation_id)
         if operation.operation_type != "parse_document":
             raise DomainError(
                 status_code=409,
@@ -215,10 +247,12 @@ class DocumentProcessingService:
                 message="The source document for this operation was not found.",
             )
 
-        self.operations.start(operation)
         document.status = RecordStatus.processing
         self.session.flush()
         result = self._parse_stored_document(document)
+        self.operations.set_stage(operation, OperationStage.extracting)
+        if self.publish_stages:
+            self.session.commit()
         profile = self.session.get(Profile, document.profile_id)
         if profile is None:
             raise RuntimeError("Source document references a missing profile")

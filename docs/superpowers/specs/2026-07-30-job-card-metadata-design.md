@@ -19,7 +19,7 @@ Render at most four chips. Select available, meaningful values in this order:
 
 1. Profile match score.
 2. Salary range.
-3. Sponsorship or work-authorization constraint.
+3. Confirmed visa sponsorship.
 4. Non-English required language.
 5. Workplace type.
 6. Employment type.
@@ -34,8 +34,8 @@ Do not display team, role category, industry, relative posting time, `unknown`,
 ## Labels
 
 - `available` sponsorship becomes `Visa sponsorship`.
-- `unavailable` becomes `No sponsorship`.
-- `work_authorization_required` becomes `Work authorization required`.
+- `unavailable`, `work_authorization_required`, and unknown sponsorship states
+  are omitted from cards because they are common rather than differentiating.
 - Non-English languages use `<Language> required`.
 - Workplace, employment, experience, travel, and degree values use concise
   title-cased labels.
@@ -56,8 +56,6 @@ Do not display team, role category, industry, relative posting time, `unknown`,
 
 - Match uses the existing soft primary treatment.
 - Visa sponsorship uses a soft green treatment.
-- No sponsorship and work-authorization requirements use a soft amber
-  treatment.
 - Other facts remain neutral.
 - Keep the existing chip spacing and fixed divider spacing.
 

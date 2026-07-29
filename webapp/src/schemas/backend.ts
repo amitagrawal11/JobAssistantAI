@@ -29,6 +29,25 @@ export const backendCandidateFactSchema = z.object({
 
 export const customSectionSchema = z.object({ id: z.string(), title: z.string(), body: z.string() });
 
+export const profileProcessingSchema = z.object({
+  operation_id: z.string().uuid(),
+  source_document_id: z.string().uuid().nullable(),
+  status: z.enum(['pending', 'running', 'succeeded', 'failed']),
+  stage: z.enum(['uploading', 'reading', 'extracting', 'complete', 'failed']),
+  error_code: z.string().nullable(),
+  retryable: z.boolean(),
+  started_at: z.iso.datetime({ offset: true }).nullable(),
+  completed_at: z.iso.datetime({ offset: true }).nullable(),
+  stage_timings: z.record(
+    z.string(),
+    z.object({
+      started_at: z.iso.datetime({ offset: true }),
+      completed_at: z.iso.datetime({ offset: true }).nullable(),
+      duration_ms: z.number().int().nonnegative(),
+    }),
+  ).default({}),
+});
+
 export const backendProfileSchema = z.object({
   id: z.string().uuid(),
   display_name: z.string(),
@@ -37,6 +56,7 @@ export const backendProfileSchema = z.object({
   source_comparison_resolved: z.boolean(),
   is_default: z.boolean().default(false),
   source_filename: z.string().nullable().default(null),
+  processing: profileProcessingSchema.nullable().default(null),
   ai_preferences: z.record(z.string(), z.string()),
   contact: z.record(z.string(), z.string()).default({}),
   application_defaults: z.record(z.string(), z.unknown()).default({}),

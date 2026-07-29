@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, RefreshCw, FolderOpen } from 'lucide-react';
+import { Loader2, RefreshCw, FolderOpen, ChevronDown, Zap } from 'lucide-react';
 import { listApplications, applicationsQueryKey, updateApplicationStatus } from '../api/applications';
+import { autoApplyPipelinesKey, listAutoApplyPipelines } from '../api/auto-apply';
 import type { ApplicationOutcome } from '../schemas/tracked-application';
 import { useActiveProfileId } from '../lib/active-profile';
 import { BackendError } from '../api/client';
+import { PageHeader } from '../components/page-header';
+import { PageLayout, PageScrollArea } from '../components/page-layout';
 
 const STATUS_TONE: Record<string, string> = {
   applied: 'bg-primary/10 text-primary',
@@ -30,6 +33,12 @@ export function ApplicationsPage() {
     queryFn: () => listApplications(activeProfileId as string, filter),
     enabled: !!activeProfileId,
   });
+  const pipelinesQuery = useQuery({
+    queryKey: autoApplyPipelinesKey(activeProfileId ?? ''),
+    queryFn: () => listAutoApplyPipelines(activeProfileId as string),
+    enabled: !!activeProfileId,
+    refetchInterval: 5_000,
+  });
 
   const advance = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ApplicationOutcome }) => updateApplicationStatus(id, status),
@@ -38,13 +47,16 @@ export function ApplicationsPage() {
 
   const rows = query.data?.items ?? [];
   const counts = query.data?.counts ?? {};
+  const pipelines = pipelinesQuery.data?.items ?? [];
 
   return (
-    <div className="w-full">
-      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Track</p>
-      <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">Applications</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Everything you’ve applied to, in one place.</p>
+    <PageLayout>
+      <PageHeader
+        title="Applications"
+        description="Everything you’ve applied to, in one place."
+      />
 
+      <PageScrollArea className="mt-5 pr-1">
       {!activeProfileId ? (
         <div className="mt-6 grid min-h-[280px] place-items-center rounded-2xl border border-dashed border-border">
           <div className="text-center">
@@ -55,7 +67,55 @@ export function ApplicationsPage() {
         </div>
       ) : (
         <>
-          <div className="mt-5 flex flex-wrap gap-2">
+          {pipelines.length > 0 ? (
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-foreground">Auto-Apply pipelines</h2>
+                {pipelinesQuery.isFetching ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : null}
+              </div>
+              <div className="space-y-2">
+                {pipelines.map((pipeline, index) => {
+                  const progress = pipeline.total_count > 0
+                    ? Math.round((pipeline.completed_count / pipeline.total_count) * 100)
+                    : 0;
+                  return (
+                    <details key={pipeline.id} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-card)]">
+                      <summary className="flex cursor-pointer list-none items-center gap-4 px-4 py-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Zap className="size-4" /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="truncate text-sm font-semibold text-foreground">Auto-Apply pipeline {pipelines.length - index}</p>
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold capitalize text-primary">{pipeline.status.replaceAll('_', ' ')}</span>
+                          </div>
+                          <div className="mt-2 flex items-center gap-3">
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                              <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${progress}%` }} />
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground">{pipeline.completed_count}/{pipeline.total_count}</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="border-t border-border bg-muted/15">
+                        {pipeline.items.map((item) => (
+                          <div key={item.id} className="grid grid-cols-[32px_1fr_auto] items-center gap-3 border-b border-border px-4 py-3 last:border-0">
+                            <span className="grid size-7 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{item.position + 1}</span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-foreground">{item.role}</p>
+                              <p className="truncate text-xs text-muted-foreground">{item.company}{item.location ? ` · ${item.location}` : ''}</p>
+                            </div>
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold capitalize text-muted-foreground">{item.status.replaceAll('_', ' ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
             {FILTERS.map((f) => (
               <button key={f} onClick={() => setFilter(f)} className={'rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ' + (f === filter ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-foreground/80 hover:bg-muted')}>
                 {f === 'All' ? 'All' : LABEL[f]}
@@ -104,6 +164,7 @@ export function ApplicationsPage() {
           </div>
         </>
       )}
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }

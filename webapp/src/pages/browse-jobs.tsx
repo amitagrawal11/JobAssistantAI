@@ -1,62 +1,75 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import {
-  Search, Ban, Calendar, MapPin, Building2, GraduationCap, Briefcase,
-  Clock3, ChevronDown, ArrowUpDown, CheckCheck, Zap, X, Check, ExternalLink,
-  Loader2, RefreshCw,
+  CheckCheck, Zap, Check, ExternalLink, Loader2, RefreshCw, Bookmark, EyeOff, X,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { listJobPostings, jobPostingsQueryKey, quickApplyToJobPosting } from '../api/job-postings';
-import { enqueueAutoApply } from '../api/auto-apply';
+import {
+  listJobPostings, listJobPostingFacets, jobPostingsQueryKey,
+  jobPostingFacetsQueryKey, quickApplyToJobPosting, updateCandidateJobState,
+} from '../api/job-postings';
+import { createAutoApplyPipeline } from '../api/auto-apply';
 import { createApplication } from '../api/applications';
 import { QUICK_APPLY_VENDORS, type JobPosting } from '../schemas/job-posting';
 import { useActiveProfileId } from '../lib/active-profile';
 import { BackendError } from '../api/client';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ApplicationMethodToggle, JobFilterBar, JobSortControl } from '../features/job-filters/job-filter-bar';
+import { parseJobFilterSearch, serializeJobFilterSearch, type JobFilterState } from '../features/job-filters/job-filter-state';
+import { formatPostedDate, jobCardMetadata } from '../features/job-cards/job-card-metadata';
+import type { JobCardMetadataTone } from '../features/job-cards/job-card-metadata';
+import {
+  applicationSelectionMode,
+  runQuickApplyBatch,
+  type QuickApplyBatchProgress,
+} from '../features/job-cards/job-application-selection';
+import { PageHeader } from '../components/page-header';
+import { PageLayout } from '../components/page-layout';
+import {
+  orderedSelectedJobs,
+  withoutSelectedJob,
+} from '../features/auto-apply/auto-apply-pipeline';
 
 const PAGE_SIZE = 24;
-
-const FILTERS = [
-  { key: 'Date', icon: Calendar }, { key: 'Location', icon: MapPin }, { key: 'Workplace', icon: Building2 },
-  { key: 'Companies', icon: Building2 }, { key: 'Degree Level', icon: GraduationCap }, { key: 'Max Experience', icon: Clock3 },
-  { key: 'Sponsors Visa', icon: Briefcase }, { key: 'Role', icon: Briefcase }, { key: 'Job Type', icon: Briefcase },
-];
-
-const SORTS = ['Newest', 'Oldest', 'Company A–Z'] as const;
-type Sort = (typeof SORTS)[number];
+const AVAILABLE_ACTION_CLASS =
+  'border border-primary/45 bg-card text-primary shadow-sm hover:border-primary hover:bg-primary/5';
+const METADATA_TONE_CLASSES: Record<JobCardMetadataTone, string> = {
+  neutral: 'bg-muted text-foreground/70',
+  primary: 'bg-primary/10 text-primary',
+  success: 'bg-emerald-50 text-emerald-700',
+  warning: 'bg-amber-50 text-amber-700',
+};
 
 function vendorLabel(vendor: string): string {
   return vendor.charAt(0).toUpperCase() + vendor.slice(1);
 }
 
-function postedLabel(iso: string | null): string {
-  if (!iso) return '';
-  const then = new Date(iso).getTime();
-  const days = Math.floor((Date.now() - then) / 86_400_000);
-  if (days <= 0) return 'Today';
-  if (days === 1) return '1 day ago';
-  if (days < 30) return `${days} days ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
 export function BrowseJobsPage() {
   const activeProfileId = useActiveProfileId();
   const queryClient = useQueryClient();
-  const [include, setInclude] = useState<string[]>([]);
-  const [draft, setDraft] = useState('');
-  const [exclude, setExclude] = useState('');
-  const [active, setActive] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = parseJobFilterSearch(searchParams.toString());
+  const selectionMode = applicationSelectionMode(filters.applicationMethods);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [applied, setApplied] = useState<Set<string>>(new Set());
-  const [sort, setSort] = useState<Sort>('Newest');
-  const [sortOpen, setSortOpen] = useState(false);
-  const [page, setPage] = useState(1);
   const [pendingApply, setPendingApply] = useState<string | null>(null);
+  const [bulkProgress, setBulkProgress] = useState<QuickApplyBatchProgress | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ succeeded: number; failed: number } | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
-  const search = include.join(' ').trim();
+  const setFilters = useCallback((next: JobFilterState) => {
+    setSearchParams(serializeJobFilterSearch(next), { replace: true });
+  }, [setSearchParams]);
 
   const query = useQuery({
-    queryKey: jobPostingsQueryKey(search, page, PAGE_SIZE),
-    queryFn: () => listJobPostings(search, page, PAGE_SIZE),
+    queryKey: jobPostingsQueryKey(filters, PAGE_SIZE),
+    queryFn: () => listJobPostings(filters, PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
+  const facetsQuery = useQuery({
+    queryKey: jobPostingFacetsQueryKey(filters),
+    queryFn: () => listJobPostingFacets(filters),
     placeholderData: keepPreviousData,
   });
 
@@ -64,45 +77,46 @@ export function BrowseJobsPage() {
     mutationFn: (job: JobPosting) =>
       quickApplyToJobPosting(job.id, { profile_id: activeProfileId as string }),
   });
+  const pipelineMutation = useMutation({
+    mutationFn: (jobIds: string[]) => createAutoApplyPipeline({
+      profile_id: activeProfileId as string,
+      job_posting_ids: jobIds,
+    }),
+    onSuccess: () => {
+      setSelected(new Set());
+      setReviewOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['auto-apply-pipelines', activeProfileId] });
+      void queryClient.invalidateQueries({ queryKey: ['auto-apply', activeProfileId] });
+      navigate('/applications');
+    },
+  });
 
   const items = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const jobs = useMemo(() => {
-    let list = items.filter((j) => {
-      if (!exclude.trim()) return true;
-      const hay = (j.title + ' ' + j.company + ' ' + (j.location ?? '') + ' ' + (j.team ?? '')).toLowerCase();
-      return !hay.includes(exclude.trim().toLowerCase());
-    });
-    if (sort === 'Newest') list = [...list].sort((a, b) => (b.posted_at ?? '').localeCompare(a.posted_at ?? ''));
-    if (sort === 'Oldest') list = [...list].sort((a, b) => (a.posted_at ?? '').localeCompare(b.posted_at ?? ''));
-    if (sort === 'Company A–Z') list = [...list].sort((a, b) => a.company.localeCompare(b.company));
-    return list;
-  }, [items, exclude, sort]);
-
-  const toggleFilter = (k: string) => setActive((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const jobs = items;
   const toggleSel = (id: string) => {
     setSelected((s) => {
       const n = new Set(s);
       const adding = !n.has(id);
       if (adding) n.add(id); else n.delete(id);
-      // Adding a role to the bucket enqueues it for auto-apply (needs a profile).
-      if (adding && activeProfileId) {
-        enqueueAutoApply({ profile_id: activeProfileId, job_posting_id: id })
-          .then(() => queryClient.invalidateQueries({ queryKey: ['auto-apply', activeProfileId] }))
-          .catch(() => { /* surfaced elsewhere; keep selection optimistic */ });
-      }
       return n;
     });
   };
-  const selectAll = () => setSelected((s) => s.size === jobs.length ? new Set() : new Set(jobs.map((j) => j.id)));
-  const addChip = () => { const v = draft.trim(); if (v && !include.includes(v)) { setInclude((c) => [...c, v]); setPage(1); } setDraft(''); };
-  const removeChip = (chip: string) => { setInclude((c) => c.filter((x) => x !== chip)); setPage(1); };
+  const selectAll = () => {
+    const allSelected = jobs.length > 0 && jobs.every((job) => selected.has(job.id));
+    if (allSelected) {
+      setSelected(new Set());
+      return;
+    }
 
-  const recordApplication = (job: JobPosting, source: string) => {
+    const ids = new Set(jobs.map((job) => job.id));
+    setSelected(ids);
+  };
+  const recordApplication = async (job: JobPosting, source: string) => {
     if (!activeProfileId) return;
-    createApplication({
+    await createApplication({
       profile_id: activeProfileId,
       job_posting_id: job.id,
       role: job.title,
@@ -121,7 +135,7 @@ export function BrowseJobsPage() {
       try {
         await applyMutation.mutateAsync(job);
         setApplied((s) => new Set(s).add(job.id));
-        recordApplication(job, 'quick_apply');
+        void recordApplication(job, 'quick_apply');
       } catch {
         // Fall back to opening the posting if the automated apply fails.
         window.open(job.apply_url ?? job.hosted_url, '_blank', 'noopener');
@@ -132,102 +146,131 @@ export function BrowseJobsPage() {
     }
     window.open(job.apply_url ?? job.hosted_url, '_blank', 'noopener');
     setApplied((s) => new Set(s).add(job.id));
-    recordApplication(job, 'manual');
+    void recordApplication(job, 'manual');
+  };
+
+  const bulkQuickApply = async () => {
+    if (!activeProfileId || selectionMode !== 'quick_apply' || bulkProgress) return;
+    const selectedJobs = jobs.filter((job) => selected.has(job.id) && !applied.has(job.id));
+    if (selectedJobs.length === 0) return;
+
+    setBulkResult(null);
+    setBulkProgress({ completed: 0, total: selectedJobs.length });
+    const jobsById = new Map(selectedJobs.map((job) => [job.id, job]));
+    const result = await runQuickApplyBatch(
+      selectedJobs.map((job) => job.id),
+      async (id) => {
+        const job = jobsById.get(id);
+        if (!job) throw new Error('Job is no longer available.');
+        await quickApplyToJobPosting(job.id, { profile_id: activeProfileId });
+        await recordApplication(job, 'quick_apply');
+      },
+      setBulkProgress,
+    );
+
+    setApplied((current) => {
+      const next = new Set(current);
+      for (const id of result.succeeded) next.add(id);
+      return next;
+    });
+    setSelected(new Set(result.failed));
+    setBulkResult({
+      succeeded: result.succeeded.length,
+      failed: result.failed.length,
+    });
+    setBulkProgress(null);
   };
 
   return (
-    <div className="w-full">
-      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Discover</p>
-      <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">Browse Jobs</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {query.isLoading ? 'Loading openings…' : `${total.toLocaleString()} live openings synced from Lever, Greenhouse, Ashby & SmartRecruiters.`}
-      </p>
-
-      {/* search */}
-      <div className="mt-5 flex items-center gap-2 rounded-2xl border border-border bg-card p-2 shadow-[var(--shadow-card)]">
-        <div className="flex flex-1 flex-wrap items-center gap-1.5 px-2">
-          <Search className="size-4 shrink-0 text-muted-foreground" />
-          {include.map((chip) => (
-            <span key={chip} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[13px] font-medium text-foreground">
-              {chip}
-              <X className="size-3 cursor-pointer text-muted-foreground hover:text-foreground" onClick={() => removeChip(chip)} />
-            </span>
-          ))}
-          <input
-            className="min-w-[140px] flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Search title, company or keyword…"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') addChip(); if (e.key === 'Backspace' && !draft && include.length) removeChip(include[include.length - 1]); }}
-          />
-        </div>
-        <div className="flex items-center gap-2 border-l border-border pl-3 pr-2">
-          <Ban className="size-4 text-muted-foreground" />
-          <input
-            className="w-48 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Exclude keywords…"
-            value={exclude}
-            onChange={(e) => setExclude(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* filters */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {FILTERS.map(({ key, icon: Icon }) => {
-          const on = active.has(key);
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => toggleFilter(key)}
-              className={
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ' +
-                (on ? 'border-foreground bg-foreground text-background' : 'border-border bg-card text-foreground/80 hover:bg-muted')
-              }
-            >
-              <Icon className="size-3.5" />
-              <span>{key}</span>
-              {on ? <X className="size-3.5" /> : <ChevronDown className="size-3.5 opacity-60" />}
-            </button>
-          );
-        })}
-        <div className="relative ml-auto">
-          <button type="button" onClick={() => setSortOpen((o) => !o)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground/80 hover:bg-muted">
-            <ArrowUpDown className="size-3.5" /> {sort} <ChevronDown className="size-3.5 opacity-60" />
-          </button>
-          {sortOpen ? (
-            <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-xl border border-border bg-card p-1 shadow-[var(--shadow-pop)]">
-              {SORTS.map((s) => (
-                <button key={s} type="button" onClick={() => { setSort(s); setSortOpen(false); }} className={'flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[13px] hover:bg-muted ' + (s === sort ? 'text-primary font-semibold' : 'text-foreground')}>
-                  {s} {s === sort ? <Check className="size-3.5" /> : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Browse Jobs"
+        description={query.isLoading
+          ? 'Loading openings…'
+          : `${total.toLocaleString()} live openings synced from Lever, Greenhouse, Ashby & SmartRecruiters.`}
+      />
+      <JobFilterBar
+        value={filters}
+        facets={facetsQuery.data}
+        facetsLoading={facetsQuery.isFetching}
+        activeProfileId={activeProfileId}
+        onChange={setFilters}
+      />
 
       {/* select-all row */}
-      <div className="mt-5 flex items-center justify-between">
-        <p className="text-[13px] text-muted-foreground">
-          Tick the roles you want, then drop them into your <span className="font-semibold text-foreground">Auto-Apply</span> bucket
-          {selected.size > 0 ? <span className="ml-1 rounded-full bg-primary/12 px-2 py-0.5 text-[12px] font-semibold text-primary">{selected.size} selected</span> : '.'}
-        </p>
-        <button type="button" onClick={selectAll} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:opacity-80">
-          <CheckCheck className="size-4" /> {selected.size === jobs.length && jobs.length > 0 ? 'Clear all' : 'Select all'}
-        </button>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="text-[13px] text-muted-foreground">
+            {selectionMode === 'quick_apply'
+              ? 'Select roles to submit together with Quick Apply'
+              : <>Tick the roles you want, then drop them into your <span className="font-semibold text-foreground">Auto-Apply</span> bucket</>}
+            {selected.size > 0 ? <span className="ml-1 rounded-full bg-primary/12 px-2 py-0.5 text-[12px] font-semibold text-primary">{selected.size} selected</span> : '.'}
+          </p>
+          <button type="button" onClick={selectAll} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:opacity-80">
+            <CheckCheck className="size-4" /> {selected.size === jobs.length && jobs.length > 0 ? 'Clear all' : 'Select all'}
+          </button>
+          {selectionMode === 'quick_apply' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void bulkQuickApply()}
+                disabled={!activeProfileId || selected.size === 0 || !!bulkProgress}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/45 bg-card px-3 py-1.5 text-[13px] font-semibold text-primary shadow-sm hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {bulkProgress ? (
+                  <><Loader2 className="size-3.5 animate-spin" /> Applying {bulkProgress.completed}/{bulkProgress.total}…</>
+                ) : (
+                  <><Zap className="size-3.5" /> Quick Apply selected{selected.size > 0 ? ` (${selected.size})` : ''}</>
+                )}
+              </button>
+              {bulkResult ? (
+                <span className={`text-[12px] font-medium ${bulkResult.failed > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                  {bulkResult.succeeded} applied{bulkResult.failed > 0 ? ` · ${bulkResult.failed} failed` : ''}
+                </span>
+              ) : null}
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setReviewOpen(true)}
+              disabled={!activeProfileId || selected.size === 0}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[13px] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <Zap className="size-3.5" />
+              Schedule Auto-Apply{selected.size > 0 ? ` (${selected.size})` : ''}
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ApplicationMethodToggle
+            values={filters.applicationMethods}
+            onChange={(applicationMethods) => {
+              setSelected(new Set());
+              setBulkResult(null);
+              setFilters({ ...filters, applicationMethods, page: 1 });
+            }}
+          />
+          <JobSortControl
+            value={filters.sort}
+            activeProfileId={activeProfileId}
+            onChange={(sort) => setFilters({ ...filters, sort, page: 1 })}
+          />
+        </div>
       </div>
 
       {/* cards */}
+      <div
+        data-testid="job-results-scroll"
+        className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+      >
       {query.isLoading ? (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="h-[184px] animate-pulse rounded-2xl border border-border bg-muted/40" />
           ))}
         </div>
       ) : query.isError ? (
-        <div className="mt-4 grid min-h-[240px] place-items-center rounded-2xl border border-dashed border-border">
+        <div className="grid min-h-[240px] place-items-center rounded-2xl border border-dashed border-border">
           <div className="text-center">
             <p className="text-sm font-medium text-foreground">Couldn’t load jobs</p>
             <p className="mt-1 text-xs text-muted-foreground">{query.error instanceof BackendError ? query.error.message : 'The backend is unavailable.'}</p>
@@ -235,68 +278,155 @@ export function BrowseJobsPage() {
           </div>
         </div>
       ) : jobs.length === 0 ? (
-        <div className="mt-4 grid min-h-[240px] place-items-center rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
+        <div className="grid min-h-[240px] place-items-center rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
           No roles match your search.
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
           {jobs.map((job) => {
             const sel = selected.has(job.id);
             const app = applied.has(job.id);
             const busy = pendingApply === job.id;
             const canQuickApply = QUICK_APPLY_VENDORS.has(job.vendor) && !!job.apply_url && !!activeProfileId;
+            const postedDate = formatPostedDate(job.posted_at);
             return (
               <article key={job.id} className={'flex flex-col rounded-2xl border bg-card p-4 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-pop)] ' + (sel ? 'border-primary ring-1 ring-primary/30' : 'border-border')}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-foreground">{job.title}</h3>
+                <div className="flex min-h-0 flex-1 items-start justify-between gap-2">
+                  <a
+                    href={job.hosted_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${job.title} at ${job.company} in a new tab`}
+                    className="group min-w-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  >
+                    <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-foreground transition-colors group-hover:text-primary group-hover:underline">{job.title}</h3>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">{job.company}{job.location ? ` · ${job.location}` : ''}</p>
-                  </div>
+                    {postedDate ? <p className="mt-1 text-[11px] text-muted-foreground/80">Posted {postedDate}</p> : null}
+                  </a>
                   <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold capitalize text-primary">{vendorLabel(job.vendor)}</span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {job.commitment ? <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/70">{job.commitment}</span> : null}
-                  {job.team ? <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/70">{job.team}</span> : null}
-                  {job.posted_at ? <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground/70">{postedLabel(job.posted_at)}</span> : null}
+                  {jobCardMetadata(job).map((metadata) => (
+                    <span
+                      key={metadata.key}
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${METADATA_TONE_CLASSES[metadata.tone]}`}
+                    >
+                      {metadata.label}
+                    </span>
+                  ))}
                 </div>
-                <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
                   <label className="flex cursor-pointer select-none items-center gap-1.5 text-[12px] text-muted-foreground">
-                    <input type="checkbox" checked={sel} onChange={() => toggleSel(job.id)} className="size-3.5 accent-[var(--primary)]" /> Auto-apply
+                    <input type="checkbox" checked={sel} onChange={() => toggleSel(job.id)} disabled={!!bulkProgress || app} className="size-3.5 accent-[var(--primary)]" /> {selectionMode === 'quick_apply' ? 'Select' : 'Auto-apply'}
                   </label>
+                  <div className="flex items-center gap-1">
+                  {activeProfileId ? <button type="button" title={job.saved ? 'Unsave job' : 'Save job'} onClick={() => updateCandidateJobState(job.id, activeProfileId, { saved: !job.saved }).then(() => { queryClient.invalidateQueries({ queryKey: ['job-postings'] }); queryClient.invalidateQueries({ queryKey: ['job-posting-facets'] }); })} className={'grid size-7 place-items-center rounded-lg ' + (job.saved ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted')}><Bookmark className="size-3.5" /></button> : null}
+                  {activeProfileId ? <button type="button" title="Dismiss job" onClick={() => updateCandidateJobState(job.id, activeProfileId, { dismissed: true }).then(() => queryClient.invalidateQueries({ queryKey: ['job-postings'] }))} className="grid size-7 place-items-center rounded-lg text-muted-foreground hover:bg-muted"><EyeOff className="size-3.5" /></button> : null}
                   <button
                     type="button"
                     onClick={() => applyToJob(job)}
                     disabled={app || busy}
-                    className={
-                      'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors ' +
-                      (app ? 'bg-emerald-50 text-emerald-700' : 'bg-primary text-primary-foreground shadow-[0_4px_11px_-5px_oklch(0.66_0.19_265_/_0.5)] hover:bg-[var(--primary-hover)]')
-                    }
+                     className={
+                       'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors ' +
+                        (app
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : AVAILABLE_ACTION_CLASS)
+                     }
                   >
                     {app ? <><Check className="size-3.5" /> Applied</>
-                      : busy ? <><Loader2 className="size-3.5 animate-spin" /> Applying…</>
-                      : canQuickApply ? <><Zap className="size-3.5" /> Quick Apply</>
-                      : <><ExternalLink className="size-3.5" /> View & Apply</>}
+                       : busy ? <><Loader2 className="size-3.5 animate-spin" /> Applying…</>
+                       : canQuickApply ? <><Zap className="size-3.5" /> Quick Apply</>
+                       : <><ExternalLink className="size-3.5" /> Apply</>}
                   </button>
+                  </div>
                 </div>
               </article>
             );
           })}
         </div>
       )}
+      </div>
 
       {/* pagination */}
       {total > PAGE_SIZE ? (
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-3 flex shrink-0 items-center justify-between">
           <p className="text-[13px] text-muted-foreground">
-            Page {page} of {totalPages} · {total.toLocaleString()} roles
+            Page {filters.page} of {totalPages} · {total.toLocaleString()} roles
             {query.isFetching ? <Loader2 className="ml-2 inline size-3.5 animate-spin align-[-2px] text-muted-foreground" /> : null}
           </p>
           <div className="flex items-center gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-lg border border-border px-3 py-1.5 text-[13px] font-medium text-foreground disabled:opacity-40 enabled:hover:bg-muted">Previous</button>
-            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="rounded-lg border border-border px-3 py-1.5 text-[13px] font-medium text-foreground disabled:opacity-40 enabled:hover:bg-muted">Next</button>
+            <button disabled={filters.page <= 1} onClick={() => setFilters({ ...filters, page: Math.max(1, filters.page - 1) })} className="rounded-lg border border-border px-3 py-1.5 text-[13px] font-medium text-foreground disabled:opacity-40 enabled:hover:bg-muted">Previous</button>
+            <button disabled={filters.page >= totalPages} onClick={() => setFilters({ ...filters, page: Math.min(totalPages, filters.page + 1) })} className="rounded-lg border border-border px-3 py-1.5 text-[13px] font-medium text-foreground disabled:opacity-40 enabled:hover:bg-muted">Next</button>
           </div>
         </div>
       ) : null}
-    </div>
+
+      {reviewOpen ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-foreground/25 p-4 backdrop-blur-[2px]"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setReviewOpen(false);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auto-apply-review-title"
+            className="flex max-h-[min(680px,calc(100vh-32px))] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-pop)]"
+          >
+            <div className="flex items-start justify-between border-b border-border px-5 py-4">
+              <div>
+                <h2 id="auto-apply-review-title" className="text-lg font-semibold text-foreground">
+                  Review Auto-Apply pipeline
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Jobs run one at a time. Review the list before starting.
+                </p>
+              </div>
+              <button type="button" onClick={() => setReviewOpen(false)} className="grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
+              {orderedSelectedJobs(jobs, selected).map((job, index) => (
+                <div key={job.id} className="flex items-center gap-3 border-b border-border py-3 last:border-0">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary">{index + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{job.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">{job.company}{job.location ? ` · ${job.location}` : ''}</p>
+                  </div>
+                  <button type="button" onClick={() => setSelected((current) => withoutSelectedJob(current, job.id))} className="grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-muted" aria-label={`Remove ${job.title}`}>
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-border px-5 py-4">
+              {pipelineMutation.isError ? (
+                <p className="mb-3 text-xs font-medium text-rose-700">
+                  {pipelineMutation.error instanceof BackendError ? pipelineMutation.error.message : 'Could not create the pipeline.'}
+                </p>
+              ) : null}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">{selected.size} job{selected.size === 1 ? '' : 's'} · Start now</p>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setReviewOpen(false)} className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">Cancel</button>
+                  <button
+                    type="button"
+                    disabled={selected.size === 0 || pipelineMutation.isPending}
+                    onClick={() => pipelineMutation.mutate(orderedSelectedJobs(jobs, selected).map((job) => job.id))}
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] disabled:opacity-45"
+                  >
+                    {pipelineMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Zap className="size-4" />}
+                    Start now
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+    </PageLayout>
   );
 }

@@ -1,9 +1,7 @@
 import {
-  documentParseSchema,
   documentReprocessSchema,
   documentUploadSchema,
   sourcePreviewSchema,
-  type DocumentParse,
   type DocumentUpload,
   type SourcePreview,
 } from '../schemas/backend';
@@ -23,15 +21,6 @@ export async function uploadDocument(
     documentUploadSchema,
     { method: 'POST', body: form },
     30_000,
-  );
-}
-
-export function executeParse(operationId: string): Promise<DocumentParse> {
-  return apiRequest(
-    `/operations/${operationId}/execute`,
-    documentParseSchema,
-    { method: 'POST' },
-    600_000,
   );
 }
 

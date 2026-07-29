@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.db.entities import ParseRun, Profile, ProfileFact, ProfileReadiness, RecordStatus, SourceDocument
+from app.db.entities import Operation, OperationStage, ParseRun, Profile, ProfileFact, ProfileReadiness, RecordStatus, SourceDocument
 from app.errors import DomainError
 from app.models.common import SourceReference
 from app.models.profile import (
@@ -13,9 +14,12 @@ from app.models.profile import (
     FactCreateRequest,
     FactVerificationRequest,
     ProfileCreate,
+    ProfileProcessing,
+    ProfileStageTiming,
     ProfileResponse,
     ProfileUpdate,
 )
+from app.operations.service import OperationService
 
 
 class ProfileService:
@@ -39,12 +43,14 @@ class ProfileService:
         return self._response(profile, [])
 
     def get(self, profile_id: uuid.UUID) -> ProfileResponse:
+        OperationService(self.session).expire_stale()
         profile = self._get_profile(profile_id)
         facts = self._current_facts(profile.id)
         self._refresh_readiness(profile, facts)
         return self._response(profile, facts)
 
     def list(self) -> list[ProfileResponse]:
+        OperationService(self.session).expire_stale()
         profiles = list(
             self.session.scalars(
                 select(Profile)
@@ -257,6 +263,57 @@ class ProfileService:
             .where(SourceDocument.profile_id == profile.id)
             .order_by(SourceDocument.created_at.desc())
         )
+        operation = self.session.scalar(
+            select(Operation)
+            .where(
+                Operation.profile_id == profile.id,
+                Operation.operation_type == "parse_document",
+            )
+            .order_by(Operation.created_at.desc())
+        )
+        processing = None
+        if operation is not None:
+            stage = operation.stage
+            if stage is None:
+                stage = (
+                    OperationStage.complete
+                    if operation.status.value == "succeeded"
+                    else OperationStage.failed
+                    if operation.status.value == "failed"
+                    else OperationStage.reading
+                )
+            source_document_id = operation.payload.get("source_document_id")
+            now = datetime.now(timezone.utc)
+            stage_timings: dict[str, ProfileStageTiming] = {}
+            for timing_stage, raw_timing in operation.payload.get("stage_timings", {}).items():
+                if not isinstance(raw_timing, dict) or not raw_timing.get("started_at"):
+                    continue
+                timing_started = datetime.fromisoformat(str(raw_timing["started_at"]))
+                timing_completed = (
+                    datetime.fromisoformat(str(raw_timing["completed_at"]))
+                    if raw_timing.get("completed_at")
+                    else None
+                )
+                stage_timings[str(timing_stage)] = ProfileStageTiming(
+                    started_at=timing_started,
+                    completed_at=timing_completed,
+                    duration_ms=(
+                        int(raw_timing.get("duration_ms", 0))
+                        if timing_completed
+                        else max(0, round((now - timing_started).total_seconds() * 1000))
+                    ),
+                )
+            processing = ProfileProcessing(
+                operation_id=str(operation.id),
+                source_document_id=str(source_document_id) if source_document_id else None,
+                status=operation.status.value,
+                stage=stage.value,
+                error_code=operation.error_code,
+                retryable=operation.status.value == "failed",
+                started_at=operation.started_at,
+                completed_at=operation.completed_at,
+                stage_timings=stage_timings,
+            )
         return ProfileResponse(
             id=str(profile.id),
             display_name=profile.display_name,
@@ -265,6 +322,7 @@ class ProfileService:
             source_comparison_resolved=profile.source_comparison_resolved,
             is_default=profile.is_default,
             source_filename=source_filename,
+            processing=processing,
             ai_preferences=profile.ai_preferences,
             contact=profile.contact,
             application_defaults=profile.application_defaults,

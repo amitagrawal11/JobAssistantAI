@@ -5,6 +5,8 @@ import { listAutoApplyQueue, autoApplyQueueKey, updateAutoApplyStatus, removeAut
 import type { AutoApplyStatus } from '../schemas/auto-apply';
 import { useActiveProfileId } from '../lib/active-profile';
 import { BackendError } from '../api/client';
+import { PageHeader } from '../components/page-header';
+import { PageLayout, PageScrollArea } from '../components/page-layout';
 
 const STATUS_TONE: Record<string, string> = {
   awaiting_approval: 'bg-amber-50 text-amber-700',
@@ -53,22 +55,22 @@ export function AutoApplyPage() {
   const freePct = Math.min(100, Math.round((stats.applied_today / FREE_LIMIT) * 100));
 
   return (
-    <div className="w-full">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Automation</p>
-          <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">Auto-Apply Queue</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Pathway tailors and applies to matched roles — with your approval on every submission.</p>
-        </div>
-        <div className="flex items-center gap-3">
+    <PageLayout>
+      <PageHeader
+        title="Auto-Apply Queue"
+        description="Pathway tailors and applies to matched roles — with your approval on every submission."
+        actions={(
+          <div className="flex items-center gap-3">
           <span className="text-[13px] font-medium text-foreground">Auto-apply</span>
           <button role="switch" aria-checked={on} onClick={() => setOn((v) => !v)} className={'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ' + (on ? 'bg-primary' : 'bg-muted-foreground/30')}>
             <span className="inline-block size-5 rounded-full bg-white shadow-sm transition-transform duration-200" style={{ transform: on ? 'translateX(22px)' : 'translateX(2px)' }} />
           </button>
           <button className="flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"><Settings2 className="size-4.5" /></button>
-        </div>
-      </div>
+          </div>
+        )}
+      />
 
+      <PageScrollArea className="mt-5 pr-1">
       {!activeProfileId ? (
         <div className="mt-6 grid min-h-[280px] place-items-center rounded-2xl border border-dashed border-border">
           <div className="text-center">
@@ -80,7 +82,7 @@ export function AutoApplyPage() {
       ) : (
         <>
           {/* banner */}
-          <div className="mt-5 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <span className="flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary"><Zap className="size-5" /></span>
@@ -157,6 +159,7 @@ export function AutoApplyPage() {
           </div>
         </>
       )}
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }

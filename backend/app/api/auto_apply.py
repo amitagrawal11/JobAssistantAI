@@ -10,9 +10,32 @@ from app.models.auto_apply import (
     AutoApplyQueueItemOutput,
     AutoApplyQueueListResponse,
     AutoApplyUpdateRequest,
+    AutoApplyPipelineCreateRequest,
+    AutoApplyPipelineListResponse,
+    AutoApplyPipelineOutput,
 )
 
 router = APIRouter(prefix="/auto-apply", tags=["auto-apply"])
+
+
+@router.get("/pipelines", response_model=AutoApplyPipelineListResponse)
+def list_pipelines(
+    profile_id: str = Query(..., min_length=1),
+    session: Session = Depends(get_session),
+) -> AutoApplyPipelineListResponse:
+    return AutoApplyService(session).list_pipelines(profile_id=profile_id)
+
+
+@router.post(
+    "/pipelines",
+    response_model=AutoApplyPipelineOutput,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_pipeline(
+    request: AutoApplyPipelineCreateRequest,
+    session: Session = Depends(get_session),
+) -> AutoApplyPipelineOutput:
+    return AutoApplyService(session).create_pipeline(request)
 
 
 @router.get("/queue", response_model=AutoApplyQueueListResponse)

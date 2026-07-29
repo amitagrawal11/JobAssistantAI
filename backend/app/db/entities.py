@@ -35,6 +35,14 @@ class OperationStatus(str, enum.Enum):
     failed = "failed"
 
 
+class OperationStage(str, enum.Enum):
+    uploading = "uploading"
+    reading = "reading"
+    extracting = "extracting"
+    complete = "complete"
+    failed = "failed"
+
+
 class ReviewStatus(str, enum.Enum):
     proposed = "proposed"
     approved = "approved"
@@ -62,6 +70,15 @@ class AutoApplyStatus(str, enum.Enum):
     tailoring = "tailoring"
     submitted = "submitted"
     skipped = "skipped"
+
+
+class AutoApplyPipelineStatus(str, enum.Enum):
+    queued = "queued"
+    running = "running"
+    paused = "paused"
+    completed = "completed"
+    completed_with_errors = "completed_with_errors"
+    cancelled = "cancelled"
 
 
 class Profile(IdentifierMixin, TimestampMixin, Base):
@@ -96,11 +113,15 @@ class Operation(IdentifierMixin, TimestampMixin, Base):
     status: Mapped[OperationStatus] = mapped_column(
         Enum(OperationStatus, name="operation_status"), nullable=False
     )
+    stage: Mapped[OperationStage | None] = mapped_column(
+        Enum(OperationStage, name="operation_stage")
+    )
     progress: Mapped[int] = mapped_column(nullable=False, default=0)
     error_code: Mapped[str | None] = mapped_column(String(100))
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class SourceDocument(IdentifierMixin, TimestampMixin, Base):
@@ -293,6 +314,52 @@ class JobPosting(IdentifierMixin, TimestampMixin, Base):
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    description_text: Mapped[str | None] = mapped_column(Text)
+    description_html: Mapped[str | None] = mapped_column(Text)
+    source_language: Mapped[str | None] = mapped_column(String(40))
+    source_department: Mapped[str | None] = mapped_column(String(300))
+    workplace_type: Mapped[str] = mapped_column(String(30), nullable=False, default="unknown", index=True)
+    employment_type: Mapped[str] = mapped_column(String(30), nullable=False, default="unknown", index=True)
+    role_category: Mapped[str] = mapped_column(String(50), nullable=False, default="other", index=True)
+    experience_level: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown", index=True)
+    source_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    max_experience: Mapped[str] = mapped_column(String(30), nullable=False, default="unknown", index=True)
+    experience_min: Mapped[int | None] = mapped_column()
+    experience_max: Mapped[int | None] = mapped_column()
+    degree_level: Mapped[str] = mapped_column(String(40), nullable=False, default="none_mentioned", index=True)
+    sponsorship: Mapped[str] = mapped_column(String(40), nullable=False, default="unknown", index=True)
+    salary_min: Mapped[int | None] = mapped_column()
+    salary_max: Mapped[int | None] = mapped_column()
+    salary_currency: Mapped[str | None] = mapped_column(String(3))
+    salary_period: Mapped[str | None] = mapped_column(String(20))
+    skills: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    languages: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    industry: Mapped[str] = mapped_column(String(80), nullable=False, default="unknown", index=True)
+    travel: Mapped[str] = mapped_column(String(30), nullable=False, default="unknown", index=True)
+    enrichment_evidence: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    enrichment_version: Mapped[str | None] = mapped_column(String(40))
+
+
+class CandidateJobState(IdentifierMixin, TimestampMixin, Base):
+    __tablename__ = "candidate_job_states"
+    __table_args__ = (
+        UniqueConstraint("profile_id", "job_posting_id", name="uq_candidate_job_state_profile_job"),
+    )
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    job_posting_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("job_postings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    saved: Mapped[bool] = mapped_column(nullable=False, default=False)
+    dismissed: Mapped[bool] = mapped_column(nullable=False, default=False)
+    match_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
+    match_level: Mapped[str | None] = mapped_column(String(30))
+    missing_critical_skills: Mapped[int | None] = mapped_column()
+    scoring_version: Mapped[str | None] = mapped_column(String(40))
+    job_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    profile_revision: Mapped[str | None] = mapped_column(String(64))
 
 
 class TrackedApplication(IdentifierMixin, TimestampMixin, Base):
@@ -326,13 +393,35 @@ class TrackedApplication(IdentifierMixin, TimestampMixin, Base):
     application_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
 
+class AutoApplyPipeline(IdentifierMixin, TimestampMixin, Base):
+    __tablename__ = "auto_apply_pipelines"
+
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[AutoApplyPipelineStatus] = mapped_column(
+        Enum(AutoApplyPipelineStatus, name="auto_apply_pipeline_status"),
+        nullable=False,
+        default=AutoApplyPipelineStatus.queued,
+    )
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AutoApplyQueueItem(IdentifierMixin, TimestampMixin, Base):
     """A job queued for automated tailoring + submission, pending the user's review."""
 
     __tablename__ = "auto_apply_queue"
     __table_args__ = (
-        UniqueConstraint("profile_id", "job_posting_id", name="uq_auto_apply_profile_job"),
+        UniqueConstraint("pipeline_id", "job_posting_id", name="uq_auto_apply_pipeline_job"),
     )
+
+    pipeline_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("auto_apply_pipelines.id", ondelete="CASCADE"), index=True
+    )
+    position: Mapped[int] = mapped_column(nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(String(1000))
 
     profile_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True

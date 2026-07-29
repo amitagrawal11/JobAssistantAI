@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Send, Target, CalendarCheck, Award, ArrowRight, Loader2, RefreshCw, Sparkles } from 'lucide-react';
@@ -6,6 +5,8 @@ import { getOverview, overviewQueryKey } from '../api/overview';
 import { listProfiles } from '../api/profiles';
 import { useActiveProfileId } from '../lib/active-profile';
 import { BackendError } from '../api/client';
+import { PageHeader } from '../components/page-header';
+import { PageLayout, PageScrollArea } from '../components/page-layout';
 
 const OUTCOME_COLOR: Record<string, string> = {
   applied: 'oklch(0.62 0.17 265)',
@@ -45,11 +46,10 @@ export function OverviewPage() {
   const activeProfileId = useActiveProfileId();
   const profilesQ = useQuery({ queryKey: ['profiles'], queryFn: listProfiles });
   const profiles = profilesQ.data ?? [];
-  const [picked, setPicked] = useState<string | null>(null);
-  // Which profile's dashboard to show: an explicit pick on this page, else the
-  // one the user has open, else their default, else the first one.
+  // Follow the shared header selection, with a default fallback while the
+  // profile switcher persists its initial choice.
   const defaultId = profiles.find((p) => p.is_default)?.id;
-  const viewedId = picked ?? activeProfileId ?? defaultId ?? profiles[0]?.id ?? null;
+  const viewedId = activeProfileId ?? defaultId ?? profiles[0]?.id ?? null;
 
   const query = useQuery({
     queryKey: overviewQueryKey(viewedId ?? ''),
@@ -58,16 +58,16 @@ export function OverviewPage() {
   });
 
   if (activeProfileId === undefined || profilesQ.isLoading) {
-    return <div className="grid min-h-[300px] place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
+    return <PageLayout className="grid place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></PageLayout>;
   }
 
   // Only truly empty when the user has no profiles at all.
   if (profiles.length === 0) {
     return (
-      <div className="w-full">
-        <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Welcome</p>
-        <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">Let’s get you hired</h1>
-        <div className="mt-6 grid place-items-center rounded-2xl border border-dashed border-border p-12 text-center">
+      <PageLayout>
+        <PageHeader title="Let’s get you hired" />
+        <PageScrollArea className="mt-5 pr-1">
+        <div className="grid place-items-center rounded-2xl border border-dashed border-border p-12 text-center">
           <Sparkles className="size-8 text-primary" />
           <p className="mt-3 text-sm font-medium text-foreground">Set up your profile to unlock your dashboard</p>
           <p className="mt-1 max-w-sm text-xs text-muted-foreground">Upload your resume so Pathway can match, tailor, and track applications for you.</p>
@@ -75,21 +75,22 @@ export function OverviewPage() {
             Get started <ArrowRight className="size-4" />
           </Link>
         </div>
-      </div>
+        </PageScrollArea>
+      </PageLayout>
     );
   }
 
   if (query.isLoading) {
-    return <div className="grid min-h-[300px] place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
+    return <PageLayout className="grid place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></PageLayout>;
   }
   if (query.isError || !query.data) {
     return (
-      <div className="grid min-h-[300px] place-items-center text-center">
+      <PageLayout className="grid place-items-center text-center">
         <div>
           <p className="text-sm text-muted-foreground">{query.error instanceof BackendError ? query.error.message : 'Failed to load your dashboard.'}</p>
           <button onClick={() => query.refetch()} className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[13px] font-medium hover:bg-muted"><RefreshCw className="size-3.5" /> Retry</button>
         </div>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -105,21 +106,11 @@ export function OverviewPage() {
   ];
 
   return (
-    <div className="w-full">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Welcome back</p>
-          <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">Your job search at a glance</h1>
-        </div>
-        <label className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] shadow-[var(--shadow-card)]">
-          <span className="text-muted-foreground">Profile</span>
-          <select value={viewedId ?? ''} onChange={(e) => setPicked(e.target.value)} className="max-w-[190px] cursor-pointer bg-transparent font-semibold text-foreground outline-none">
-            {profiles.map((p) => <option key={p.id} value={p.id}>{p.display_name}{p.is_default ? ' · default' : ''}</option>)}
-          </select>
-        </label>
-      </div>
+    <PageLayout>
+      <PageHeader title="Overview" />
 
-      <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <PageScrollArea className="mt-5 pr-1">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {STAT_CARDS.map(({ label, value, icon: Icon }) => (
           <div key={label} className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
             <div className="flex items-center justify-between">
@@ -201,6 +192,7 @@ export function OverviewPage() {
           </div>
         </section>
       </div>
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }

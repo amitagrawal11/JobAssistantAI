@@ -1,8 +1,7 @@
 import { useState, type ComponentType } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutGrid, UserRound, Briefcase, Sparkles, Layers, PieChart, Settings, Bell,
+  LayoutGrid, UserRound, Briefcase, Sparkles, Layers, PieChart, Settings,
   ChevronsLeft, ChevronsRight,
 } from 'lucide-react';
 import { OverviewPage } from './pages/overview';
@@ -12,8 +11,6 @@ import { TailorPage } from './pages/tailor';
 import { AutoApplyPage } from './pages/autoapply';
 import { ApplicationsPage } from './pages/applications';
 import { SettingsPage } from './pages/settings';
-import { getProfile, profileQueryKey } from './api/profiles';
-import { useActiveProfileId, clearActiveProfileId } from './lib/active-profile';
 
 type NavItem = { icon: ComponentType<{ className?: string }>; path: string; label: string };
 
@@ -32,8 +29,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
   const settingsActive = pathname.startsWith('/settings');
   return (
     <aside className={'flex shrink-0 flex-col transition-[width] duration-200 ' + (collapsed ? 'w-14' : 'w-56')}>
-      {/* brand bar — same height/border as the main header so their bottom lines align */}
-      <div className={'flex h-16 shrink-0 items-center gap-2.5 border-b border-border/70 ' + (collapsed ? 'justify-center' : 'px-4')}>
+      <div className={'flex h-16 shrink-0 items-center gap-2.5 ' + (collapsed ? 'justify-center' : 'px-4')}>
         <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-[0_6px_16px_-6px_oklch(0.58_0.2_265_/_0.6)]"><Sparkles className="size-4.5" /></div>
         {!collapsed ? <span className="text-[15px] font-bold tracking-[-0.02em] text-foreground">Pathway</span> : null}
       </div>
@@ -58,7 +54,13 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
               key={path}
               type="button"
               title={collapsed ? label : undefined}
-              onClick={() => { if (path === '/profile') void clearActiveProfileId(); navigate(path); }}
+              onClick={() => {
+                if (path === '/profile') {
+                  navigate('/profile?manage=1');
+                  return;
+                }
+                navigate(path);
+              }}
               className={
                 'flex items-center rounded-xl text-sm font-medium transition-colors ' +
                 (collapsed ? 'size-10 justify-center ' : 'w-full gap-3 px-3 py-2 ') +
@@ -95,54 +97,13 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
   );
 }
 
-function Breadcrumb() {
-  const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const activeProfileId = useActiveProfileId();
-  const onProfile = pathname.startsWith('/profile');
-  const profileQ = useQuery({
-    queryKey: profileQueryKey(activeProfileId ?? 'none'),
-    queryFn: () => getProfile(activeProfileId as string),
-    enabled: onProfile && !!activeProfileId,
-  });
-  const current = [...NAV, { path: '/settings', label: 'Settings' }].find((n) => pathname.startsWith(n.path));
-  const sep = <span className="shrink-0 text-muted-foreground/40">/</span>;
-  const link = 'shrink-0 font-medium text-primary transition-colors hover:text-[var(--primary-hover)] hover:underline';
-  return (
-    <nav className="flex min-w-0 items-center gap-1.5 text-sm">
-      <button type="button" onClick={() => navigate('/overview')} className={link}>Pathway</button>
-      {sep}
-      {onProfile ? (
-        activeProfileId ? (
-          <>
-            <button type="button" onClick={() => clearActiveProfileId()} className={link}>Profiles</button>
-            {sep}
-            <span className="truncate font-semibold text-primary">{profileQ.data?.display_name ?? 'Profile'}</span>
-          </>
-        ) : (
-          <span className="font-semibold text-primary">Profiles</span>
-        )
-      ) : (
-        <span className="font-semibold text-primary">{current?.label ?? 'Overview'}</span>
-      )}
-    </nav>
-  );
-}
-
 function Shell() {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <div className="app-gradient flex h-svh gap-1 overflow-hidden p-2 text-foreground">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
       <main className="content-panel flex min-w-0 flex-1 flex-col overflow-hidden rounded-[20px]">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 px-6">
-          <Breadcrumb />
-          <button type="button" className="relative flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground">
-            <Bell className="size-4.5" />
-            <span className="absolute right-2 top-2 size-1.5 rounded-full bg-danger" />
-          </button>
-        </header>
-        <div className="flex-1 overflow-auto px-8 py-7">
+        <div className="min-h-0 flex-1 overflow-hidden px-6 py-4">
           <Routes>
             <Route index element={<Navigate to="/overview" replace />} />
             <Route path="/overview" element={<OverviewPage />} />

@@ -5,6 +5,8 @@ import { getProviders, providersQueryKey, testProvider, saveAiPreference } from 
 import { useActiveProfileId } from '../lib/active-profile';
 import { BackendError } from '../api/client';
 import type { AiPreference } from '../schemas/backend';
+import { PageHeader } from '../components/page-header';
+import { PageLayout, PageScrollArea } from '../components/page-layout';
 
 const STATUS_TONE: Record<string, string> = {
   available: 'bg-emerald-50 text-emerald-700',
@@ -59,12 +61,14 @@ export function SettingsPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-[1100px]">
-      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Settings</p>
-      <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-foreground">Settings</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Choose where AI agents run and manage your preferences.</p>
+    <PageLayout className="mx-auto max-w-[1100px]">
+      <PageHeader
+        title="Settings"
+        description="Choose where AI agents run and manage your preferences."
+      />
 
-      <section className="mt-5 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+      <PageScrollArea className="mt-5 pr-1">
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-[15px] font-semibold text-foreground">AI provider</h2>
@@ -151,6 +155,7 @@ export function SettingsPage() {
           </div>
         </div>
       </section>
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }

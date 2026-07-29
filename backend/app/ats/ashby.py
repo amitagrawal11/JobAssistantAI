@@ -5,6 +5,10 @@ from datetime import datetime
 import httpx
 
 from app.ats.base import NormalizedPosting
+from app.ats.normalization import (
+    html_to_text, normalize_employment_type, normalize_experience_level,
+    normalize_role_category, normalize_workplace_type, source_fingerprint,
+)
 
 
 class AshbyConnector:
@@ -32,17 +36,29 @@ class AshbyConnector:
     @staticmethod
     def _normalize(company: str, item: dict) -> NormalizedPosting:
         posted_at = AshbyConnector._parse_datetime(item.get("publishedAt"))
+        title = str(item.get("title", "")).strip()
+        team = item.get("team") or item.get("department")
+        description_html = item.get("descriptionHtml")
+        description_text = item.get("descriptionPlain") or html_to_text(description_html)
         return NormalizedPosting(
             vendor="ashby",
             vendor_job_id=str(item.get("id")),
             company=company,
-            title=str(item.get("title", "")).strip(),
-            team=item.get("team") or item.get("department"),
+            title=title,
+            team=team,
             location=item.get("location"),
             commitment=item.get("employmentType"),
             hosted_url=str(item.get("jobUrl", "")),
             apply_url=item.get("applyUrl"),
             posted_at=posted_at,
+            description_text=description_text,
+            description_html=description_html,
+            source_department=item.get("department"),
+            workplace_type=normalize_workplace_type(item.get("workplaceType"), item.get("location")),
+            employment_type=normalize_employment_type(item.get("employmentType")),
+            role_category=normalize_role_category(title, team),
+            experience_level=normalize_experience_level(title),
+            source_fingerprint=source_fingerprint(title, item.get("location"), description_text),
         )
 
     @staticmethod

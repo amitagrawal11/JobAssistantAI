@@ -8,6 +8,8 @@ import type { DocumentChange, DocumentTailorResponse } from '../schemas/tailorin
 import type { JobAnalysis } from '../schemas/backend';
 import { useActiveProfileId } from '../lib/active-profile';
 import { BackendError } from '../api/client';
+import { PageHeader } from '../components/page-header';
+import { PageLayout, PageScrollArea } from '../components/page-layout';
 
 const CLASS_TONE: Record<string, string> = {
   REPHRASED: 'bg-primary/10 text-primary',
@@ -40,23 +42,33 @@ function Setup({ onDone }: { onDone: (t: Tailored) => void }) {
 
   if (!activeProfileId) {
     return (
-      <div className="mx-auto grid min-h-[280px] w-full max-w-[720px] place-items-center rounded-2xl border border-dashed border-border">
-        <div className="text-center">
-          <AlertCircle className="mx-auto size-8 text-muted-foreground" />
-          <p className="mt-3 text-sm font-medium text-foreground">Create a profile first</p>
-          <p className="mt-1 text-xs text-muted-foreground">Tailoring needs your resume. Set it up on the My Resume page.</p>
+      <PageLayout className="mx-auto max-w-[760px]">
+        <PageHeader
+          title="Tailor your resume to a role"
+          description="Paste a job description — Pathway analyzes it and proposes evidence-backed edits."
+        />
+        <PageScrollArea className="mt-5 pr-1">
+        <div className="grid min-h-[280px] place-items-center rounded-2xl border border-dashed border-border">
+          <div className="text-center">
+            <AlertCircle className="mx-auto size-8 text-muted-foreground" />
+            <p className="mt-3 text-sm font-medium text-foreground">Create a profile first</p>
+            <p className="mt-1 text-xs text-muted-foreground">Tailoring needs your resume. Set it up on the My Resume page.</p>
+          </div>
         </div>
-      </div>
+        </PageScrollArea>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-[760px]">
-      <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-primary">Tailor &amp; Apply</p>
-      <h1 className="mt-1 text-[24px] font-bold tracking-[-0.02em] text-foreground">Tailor your resume to a role</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Paste a job description — Pathway analyzes it and proposes evidence-backed edits.</p>
+    <PageLayout className="mx-auto max-w-[760px]">
+      <PageHeader
+        title="Tailor your resume to a role"
+        description="Paste a job description — Pathway analyzes it and proposes evidence-backed edits."
+      />
 
-      <section className="mt-5 rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+      <PageScrollArea className="mt-5 pr-1">
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-[13px] font-medium text-foreground">Role title <span className="text-muted-foreground">(optional)</span>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Senior Product Designer" disabled={run.isPending}
@@ -86,7 +98,8 @@ function Setup({ onDone }: { onDone: (t: Tailored) => void }) {
             : <span className="text-[13px] text-muted-foreground">Paste at least a paragraph to begin.</span>}
         </div>
       </section>
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }
 
@@ -117,26 +130,25 @@ function Review({ tailored, onReset }: { tailored: Tailored; onReset: () => void
   const accepted = changes.filter((c) => c.status === 'approved');
 
   return (
-    <div className="w-full">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <button onClick={onReset} className="mt-1 flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground" title="Start over"><X className="size-4.5" /></button>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.09em] text-muted-foreground">Tailor &amp; Apply</p>
-            <h1 className="mt-0.5 text-[24px] font-bold tracking-[-0.02em] text-foreground">{analysis.title}</h1>
-            <p className="text-sm text-muted-foreground">{analysis.company ?? 'Unknown company'}{analysis.location ? ` · ${analysis.location}` : ''}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2.5">
+    <PageLayout>
+      <PageHeader
+        title={analysis.title}
+        description={`${analysis.company ?? 'Unknown company'}${analysis.location ? ` · ${analysis.location}` : ''}`}
+        backLabel="Tailor Assistant"
+        onBack={onReset}
+        actions={(
+          <>
           {score != null ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[13px] font-bold text-emerald-700">{score}% match</span> : null}
           <button onClick={() => submit.mutate()} disabled={submit.isPending || submitted}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-[0_4px_11px_-5px_oklch(0.66_0.19_265_/_0.5)] hover:bg-[var(--primary-hover)] disabled:opacity-60">
             {submitted ? <><Check className="size-4" /> Submitted</> : submit.isPending ? <><Loader2 className="size-4 animate-spin" /> Submitting…</> : <><Send className="size-4" /> Approve &amp; Submit</>}
           </button>
-        </div>
-      </div>
+          </>
+        )}
+      />
 
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,0.85fr)_1.15fr]">
+      <PageScrollArea className="mt-5 pr-1">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,0.85fr)_1.15fr]">
         {/* changes */}
         <section className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="flex items-center justify-between">
@@ -192,7 +204,8 @@ function Review({ tailored, onReset }: { tailored: Tailored; onReset: () => void
           <p className="mt-2 text-[11px] text-muted-foreground">Generated by {tailor.provider} · {tailor.model}</p>
         </section>
       </div>
-    </div>
+      </PageScrollArea>
+    </PageLayout>
   );
 }
 

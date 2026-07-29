@@ -17,6 +17,15 @@ class NormalizedPosting:
     hosted_url: str
     apply_url: str | None
     posted_at: datetime | None
+    description_text: str | None = None
+    description_html: str | None = None
+    source_language: str | None = None
+    source_department: str | None = None
+    workplace_type: str = "unknown"
+    employment_type: str = "unknown"
+    role_category: str = "other"
+    experience_level: str = "unknown"
+    source_fingerprint: str = ""
 
 
 class AtsConnector(Protocol):
