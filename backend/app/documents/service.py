@@ -26,7 +26,8 @@ from app.db.entities import (
 )
 from app.ai.registry import ProviderRegistry
 from app.documents.validation import validate_document
-from app.documents.ai_extractor import extract_candidate_facts, extract_deterministic_facts
+from app.documents.normalizer import normalize_candidate_facts
+from app.documents.ai_extractor import extract_candidate_facts
 from app.documents.profile_extraction_prompt import PROFILE_EXTRACTION_PROMPT_VERSION
 from app.documents.parser import DocumentParser
 from app.errors import DomainError
@@ -35,6 +36,10 @@ from app.storage.protocol import ObjectStorage
 from app.operations.service import OperationService
 
 logger = logging.getLogger(__name__)
+
+# Model families that are poor at profile extraction (code/embedding models).
+_LOW_QUALITY_MODEL_HINTS = ("coder", "-code", "code-", "embed", "embedding")
+
 
 def _derive_contact_socials(facts) -> tuple[dict[str, str], dict[str, str]]:
     """Pull contact details + social links out of the extracted contact facts."""
@@ -70,10 +75,19 @@ def _derive_contact_socials(facts) -> tuple[dict[str, str], dict[str, str]]:
     return contact, {k: v for k, v in socials.items() if v}
 
 
-def _eligible_extraction_model(configured: str, available: list[str]) -> str | None:
-    """Return the configured model only; never substitute a larger model."""
-    wanted = configured.strip().casefold()
-    return next((model for model in available if model.casefold() == wanted), None)
+def _preferred_extraction_model(models: list[str]) -> str | None:
+    """Pick the best installed model for resume extraction.
+
+    Prefers general chat models and de-prioritizes code/embedding models
+    (e.g. deepseek-coder), which extract resumes poorly.
+    """
+    if not models:
+        return None
+    ranked = sorted(
+        models,
+        key=lambda m: any(hint in m.lower() for hint in _LOW_QUALITY_MODEL_HINTS),
+    )
+    return ranked[0]
 
 
 class DocumentService:
@@ -134,7 +148,6 @@ class DocumentService:
                 progress=0,
                 payload={
                     "source_document_id": str(document.id),
-                    "use_ai": False,
                     "stage_timings": {
                         "uploading": {
                             "started_at": profile.created_at.isoformat(),
@@ -182,7 +195,7 @@ class DocumentService:
             status=OperationStatus.pending,
             stage=OperationStage.reading,
             progress=0,
-            payload={"source_document_id": str(document.id), "use_ai": True},
+            payload={"source_document_id": str(document.id)},
         )
         self.session.add(operation)
         profile = self.session.get(Profile, document.profile_id)
@@ -243,60 +256,57 @@ class DocumentProcessingService:
         profile = self.session.get(Profile, document.profile_id)
         if profile is None:
             raise RuntimeError("Source document references a missing profile")
-        settings = get_settings()
-        use_ai = operation.payload.get("use_ai") is True
-        provider_id = "ollama"
-        model: str | None = None
+        provider_id = profile.ai_preferences.get("provider")
+        model = profile.ai_preferences.get("model")
         extraction_metadata: dict[str, str] = {"method": "deterministic"}
-        facts = extract_deterministic_facts(result.parsed_document)
-        if use_ai:
+        if not provider_id or not model:
+            settings = get_settings()
+            provider_id = settings.ai_provider
+            configured_models = settings.ollama_models if provider_id == "ollama" else settings.openai_models
+            model = next((item.strip() for item in configured_models.split(",") if item.strip()), None)
+            if not model and provider_id in {"ollama", "openai"}:
+                # No allowlist configured: pick the best model actually installed
+                # on the provider instead of silently degrading to the weak
+                # deterministic heuristic.
+                try:
+                    available = ProviderRegistry(settings).get(provider_id).models()
+                except Exception:
+                    logger.warning("could not list %s models for extraction", provider_id, exc_info=True)
+                    available = []
+                model = _preferred_extraction_model(available)
+            if model:
+                profile.ai_preferences = {"provider": provider_id, "model": model}
+        if provider_id in {"ollama", "openai"} and model:
             try:
-                available = ProviderRegistry(settings).get(provider_id).models()
-            except Exception:
-                logger.warning(
-                    "could not list %s models for extraction",
-                    provider_id,
-                    exc_info=True,
-                )
-                available = []
-            model = _eligible_extraction_model(
-                settings.resume_extraction_model,
-                available,
-            )
-        if use_ai and model:
-            try:
-                enhanced = extract_candidate_facts(
-                    result.parsed_document,
-                    provider_id,
-                    model,
-                )
+                facts = extract_candidate_facts(result.parsed_document, provider_id, model)
                 extraction_metadata = {
-                    "method": "section_ai",
+                    "method": "ai_agent",
                     "provider": provider_id,
                     "model": model,
                     "prompt_version": PROFILE_EXTRACTION_PROMPT_VERSION,
                 }
-                if len(facts) > len(enhanced):
+                # Safety net: if a flaky model run yields fewer facts than the
+                # deterministic extractor, keep the larger set so results never
+                # regress below the baseline.
+                baseline = normalize_candidate_facts(result.parsed_document)
+                if len(baseline) > len(facts):
                     logger.warning(
                         "AI extraction returned %s facts (< %s deterministic); using deterministic",
-                        len(enhanced),
-                        len(facts),
+                        len(facts), len(baseline),
                     )
+                    facts = baseline
                     extraction_metadata = {"method": "deterministic_fallback", "provider": provider_id, "model": model}
-                else:
-                    facts = enhanced
             except Exception:
+                # Never fail the upload outright: fall back to the deterministic
+                # extractor so the user still gets a usable (if smaller) profile.
                 logger.warning(
                     "AI extraction failed (provider=%s model=%s); falling back to deterministic",
                     provider_id, model, exc_info=True,
                 )
+                facts = normalize_candidate_facts(result.parsed_document)
                 extraction_metadata = {"method": "deterministic_fallback", "provider": provider_id, "model": model}
-        elif use_ai:
-            extraction_metadata = {
-                "method": "deterministic_fallback",
-                "provider": provider_id,
-                "model": settings.resume_extraction_model,
-            }
+        else:
+            facts = normalize_candidate_facts(result.parsed_document)
 
         # Seed contact + socials from the resume, filling only empty fields so
         # any values the user already edited are preserved on re-upload.
@@ -363,7 +373,6 @@ class DocumentProcessingService:
                 "element_count": len(result.parsed_document.elements),
                 "fact_count": len(facts),
                 "ocr_retry": result.parsed_document.provenance.get("ocr_retry", False),
-                "extraction": extraction_metadata,
             },
         )
         self.session.add(parse_run)

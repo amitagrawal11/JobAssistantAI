@@ -41,13 +41,6 @@ _URL_RE = re.compile(r"(?:https?://)?(?:www\.)?[A-Za-z0-9-]+\.(?:dev|io|me|app|t
 _NAME_RE = re.compile(r"^[A-Za-z][A-Za-z.'\-]+(?:\s+[A-Za-z][A-Za-z.'\-]+){1,3}$")
 _LOCATION_RE = re.compile(r"\b([A-Z][A-Za-z.]+(?:\s[A-Z][A-Za-z.]+)?),\s*([A-Z][A-Za-z.]+(?:\s[A-Z][A-Za-z.]+)?)\b")
 _DIGITS_RE = re.compile(r"\d")
-_DATE_RANGE_RE = re.compile(
-    r"\b(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+)?"
-    r"(?:19|20)\d{2}\s*[-–]\s*"
-    r"(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+)?"
-    r"(?:Present|Current|(?:19|20)\d{2})\b",
-    re.I,
-)
 
 
 @dataclass
@@ -250,78 +243,6 @@ def _deterministic_sections(header: list[ParsedElement], sections: dict[str, lis
             if len(line) >= 3 and any(c.isalpha() for c in line):
                 facts.append(_fact("certifications", f"certification_{i}", line, [e.id]))
 
-    facts.extend(_structured_experience(sections.get("experience", [])))
-    facts.extend(_structured_projects(sections.get("project", [])))
-    facts.extend(_structured_education(sections.get("education", [])))
-    return facts
-
-
-def _structured_experience(elements: list[ParsedElement]) -> list[ExtractedProfileFact]:
-    entries: list[list[ParsedElement]] = []
-    current: list[ParsedElement] = []
-
-    def flush() -> None:
-        nonlocal current
-        if current and any(_DATE_RANGE_RE.search(item.text) for item in current):
-            entries.append(current)
-        current = []
-
-    for element in elements:
-        is_new_heading = element.element_type == "section_header"
-        current_complete = (
-            any(_DATE_RANGE_RE.search(item.text) for item in current)
-            and any(item.element_type == "list_item" for item in current)
-        )
-        if is_new_heading and current_complete:
-            flush()
-        current.append(element)
-    flush()
-
-    return [
-        _fact(
-            "experience",
-            f"experience_{index}",
-            " | ".join(item.text.strip() for item in entry if item.text.strip()),
-            [item.id for item in entry],
-        )
-        for index, entry in enumerate(entries, start=1)
-    ]
-
-
-def _structured_projects(elements: list[ParsedElement]) -> list[ExtractedProfileFact]:
-    candidates = [
-        element
-        for element in elements
-        if element.element_type == "list_item" and element.text.strip()
-    ]
-    if not candidates:
-        candidates = [element for element in elements if element.text.strip()]
-    return [
-        _fact("project", f"project_{index}", element.text, [element.id])
-        for index, element in enumerate(candidates, start=1)
-    ]
-
-
-def _structured_education(elements: list[ParsedElement]) -> list[ExtractedProfileFact]:
-    facts: list[ExtractedProfileFact] = []
-    index = 1
-    for element in elements:
-        text = " ".join(element.text.split())
-        matches = list(_DATE_RANGE_RE.finditer(text))
-        parts: list[str]
-        if len(matches) > 1:
-            parts = []
-            start = 0
-            for match in matches:
-                parts.append(text[start : match.end()].strip())
-                start = match.end()
-            if text[start:].strip():
-                parts[-1] = f"{parts[-1]} {text[start:].strip()}"
-        else:
-            parts = [text] if text else []
-        for part in parts:
-            facts.append(_fact("education", f"education_{index}", part, [element.id]))
-            index += 1
     return facts
 
 
